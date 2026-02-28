@@ -149,13 +149,14 @@ Table of Contents
    o  HACA-Core (draft-orrico-haca-core-07): Cognitive Profile:
       Autonomous. Zero-Trust host model, static identity, append-
       only memory, and continuous drift detection via Unigram NCD.
-      Designed for autonomous operation in hostile or opaque
-      environments.
+      Designed for autonomous operation in hostile environments under
+      full execution control. REQUIRES Transparent CPE topology.
    o  HACA-Symbiont (draft-orrico-haca-symbiont-03): Cognitive
       Profile: Symbiont. High-Trust host model, evolutionary
       identity bound to a single Operator, tiered memory metabolism,
       and mechanistic health-based fault responses. Designed for
-      lifelong cognitive companionship with a single bound Operator.
+      lifelong cognitive companionship across any CPE topology
+      (Transparent or Opaque).
 
    Extensions (applicable to any Cognitive Profile):
 
@@ -360,12 +361,22 @@ Table of Contents
       assume that the CPE's execution envelope is not exclusively
       under its control.
 
-   The topology classification affects drift measurement (the active
-   Cognitive Profile defines the applicable measurement method for
-   Opaque CPEs; see HACA-Core Section 4.3 and HACA-Symbiont Section 7
-   respectively) and the availability of operational modes (Section
-   8.3). It does NOT alter the mandatory axioms defined in the active
-   Cognitive Profile; all profile axioms apply regardless of topology.
+   The topology classification determines which Cognitive Profile is
+   applicable: HACA-Core REQUIRES Transparent CPE topology; its
+   invariants (exclusive memory ownership, active confinement, and
+   deterministic drift measurement) presuppose full execution control
+   that is unavailable in Opaque environments. HACA-Symbiont supports
+   both Transparent and Opaque topologies; its High-Trust model does
+   not depend on observability of the CPE's internal state.
+
+   Implementations MUST declare their CPE topology in their compliance
+   statement. An implementation that selects HACA-Core and detects an
+   Opaque CPE at boot MUST halt and refuse to proceed. Opaque CPE
+   implementations MUST use HACA-Symbiont.
+
+   The topology classification also affects drift measurement (see
+   HACA-Symbiont Section 7 for Opaque CPE drift handling) and the
+   availability of operational modes (Section 9.3).
 
    3.4. Memory Interface Layer (MIL)
 
@@ -1052,11 +1063,9 @@ Table of Contents
    o  HACA-Symbiont-Mesh: HACA-Symbiont-Full plus CMI-specific tests
       (defined in HACA-CMI).
 
-   Note: Implementations using opaque CPE providers where internal
-   caching and model update policies are not observable SHOULD
-   declare CPE-opaque compliance in their compliance statement. See
-   the active Cognitive Profile for the full definition (HACA-Core
-   Axiom I; HACA-Symbiont Axiom IV).
+   Note: Implementations using Opaque CPE providers MUST use
+   HACA-Symbiont. See HACA-Arch Section 3.3.1 for the normative
+   profile-topology binding rules.
 
    9.3. Operational Modes (Transparent CPE)
 

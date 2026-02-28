@@ -12,7 +12,10 @@ Abstract
    This document specifies the HACA-Core cognitive profile for the
    Host-Agnostic Cognitive Architecture (HACA) v1.0. HACA-Core defines
    an alternative set of axioms, memory management protocols, and
-   lifecycle contracts for systems designed for autonomous operation.
+   lifecycle contracts for systems designed for autonomous operation
+   under full environmental control. HACA-Core REQUIRES a Transparent
+   CPE topology (HACA-Arch Section 3.3.1); implementations running on
+   Opaque CPE topologies MUST use HACA-Symbiont instead.
 
    HACA-Core operates within the structural framework defined by
    HACA-Arch (draft-orrico-haca-arch-07). It is a peer cognitive
@@ -87,8 +90,8 @@ Table of Contents
    HACA-Core is a peer cognitive profile that replaces the High-Trust
    paradigm with a Zero-Trust, paranoid cognitive profile. A
    HACA-Core system does not bind to an Operator or evolve its
-   identity; it is designed to operate autonomously in hostile or
-   opaque environments, actively resisting all forms of Semantic Drift
+   identity; it is designed to operate autonomously in hostile
+   environments with full execution control, actively resisting all forms of Semantic Drift
    to maintain a static, immutable Persona ($\Omega$).
 
    The ultimate objective of HACA-Core is to create a cognitive entity
@@ -187,6 +190,8 @@ Table of Contents
 
    Feature              | HACA-Core           | HACA-Symbiont
    ---------------------|---------------------|----------------------
+   CPE Topology         | Transparent Only    | Transparent &
+                        |                     | Opaque
    Primary Directive    | Autonomous Survival | Operator Symbiosis
    Environment Trust    | Zero-Trust          | High-Trust (Operator-
                         |                     | Bound)
@@ -232,23 +237,9 @@ Table of Contents
         a violation. Implementations MUST document which cross-cycle
         optimizations are in use and their compliance rationale.
 
-         CPE-Opaque Compliance: When the CPE is an opaque
-         provider that does not expose its internal caching,
-         fine-tuning, or model update policies, Axiom I applies
-         strictly to the hardware/provider boundary controlled by
-         the HACA implementation. If the CPE relies on a remote,
-         opaque API, the remote entity is considered external to
-         the mathematical axioms. The implementation MUST ensure
-         that its local interaction model with the remote entity
-         remains strictly stateless.
-         
-         Any state retention by the remote provider constitutes a
-         third-party risk governed by Axiom VIII (Drift), not an
-         exemption to Axiom I.
-
-        Implementations using self-hosted CPEs where cache behavior
-        is fully observable CAN achieve full Axiom I compliance and
-        SHOULD declare this in their compliance statement.
+        HACA-Core requires a self-hosted or directly-controlled CPE
+        where cache behavior and inference parameters are fully
+        observable. This is a prerequisite, not an option.
 
    II.  MIL Primacy
 
@@ -525,28 +516,10 @@ Table of Contents
    (No context restoration is required since the CPE is strictly stateless
    per Axiom I).
 
-   Opaque CPE Isolation Constraint: The probe response containment
-   requirements above differ in their enforceability depending on
-   CPE topology class (HACA-Arch Section 3.3.1):
-
-   o  For Transparent CPEs, the SIL MUST discard all state deltas
-      and side-effects produced by probe invocations before they are
-      committed. This is a hard normative requirement; the SIL has
-      deterministic control over the execution boundary and MUST
-      enforce it without exception.
-
-   o  For Opaque CPEs, where the SIL cannot intercept tool calls
-      or EL actions before execution, implementations SHOULD use a
-      dedicated sandboxed execution context for probe invocations,
-      ensuring that any side-effects are isolated and discarded on
-      probe completion. Alternatively, implementations SHOULD prefer
-      non-executable probes (read-only queries that do not trigger EL
-      actions) to avoid irreversible side-effects. If neither
-      sandboxing nor non-executable probes are feasible in the
-      target deployment, the implementation MUST document this
-      limitation in its compliance statement and MUST accept that
-      probe accuracy may be degraded relative to Transparent CPE
-      deployments.
+   Probe Isolation: The SIL MUST discard all state deltas and
+   side-effects produced by probe invocations before they are
+   committed. The SIL has deterministic control over the execution
+   boundary and MUST enforce this without exception.
 
    5.4. Metric Normalization
 
@@ -580,7 +553,7 @@ Table of Contents
    $\hat{D}_{behavioral}$ more heavily, favoring detection of
    output distribution shifts (e.g., sudden style or policy
    changes). When using $D_{probe}$ as the behavioral metric
-   (opaque CPE), $\alpha = 0$ is a common LotL default, relying 
+   (when logprobs are unavailable), $\alpha = 0$ is a common LotL default, relying
    entirely on NCD-based probing.
 
    Note: The recovery threshold $\epsilon$ is intentionally stricter
@@ -770,17 +743,6 @@ Table of Contents
    stronger probe secrecy MAY store the pool in an encrypted form
    with the decryption key held outside the Host.
 
-   CPE-Opaque Probe Injection Limitation: When the CPE is accessed
-   via a commercial API, the input channel typically distinguishes
-   between system prompts and user prompts at the API level. The
-   SIL cannot fully guarantee that probe prompts are
-   indistinguishable from operational inputs, because the CPE
-   provider may internally differentiate message roles. In such
-   configurations, implementations SHOULD inject probes using the
-   same message role (e.g., "user") as operational inputs and
-   SHOULD document the residual risk that the CPE provider could
-   theoretically detect and special-case probe traffic.
-
    5.9. Probe Rate Limiting
 
    To prevent runaway probe invocations from exhausting CPE budgets,
@@ -862,10 +824,9 @@ Table of Contents
    full probe cycle MUST be deferred to the first warm-boot following
    FAP completion.
 
-   FAP and Execution Mode: FAP MUST be adapted to the detected
-   execution mode (HACA-Arch Section 3.3.1). In Transparent Mode, the
-   SIL orchestrates FAP. In Opaque Mode, the CPE self-executes FAP
-   using its native tool access, fulfilling the SIL role itself.
+   FAP and Execution Mode: FAP is orchestrated by the SIL, which has
+   deterministic control over the execution boundary in the required
+   Transparent CPE topology (HACA-Arch Section 3.3.1).
 
 6.  Endure Protocol
 
@@ -1091,10 +1052,6 @@ Table of Contents
         probe cycle (Section 6d) detects the stale reference
         signatures and signals a Consistency Fault.
 
-   Note: Implementations using opaque CPE providers SHOULD declare
-   "HACA-Core (CPE-opaque compliance)" in their compliance statement.
-   See Axiom I for the full definition and implications.
-
 9.  Memory Lifecycle Management
 
 9.1.  Memory Tiers
@@ -1149,11 +1106,9 @@ Table of Contents
    o  Recovery threshold: ε = 0.05
    o  Metric weight: α = 0.5
 
-   These values were derived from empirical testing with commercial
-   LLM APIs and may require significant adjustment for self-hosted
-   models, fine-tuned models, or non-LLM CPEs. The calibration
-   procedure in Section 5.5.1 is mandatory regardless of starting
-   values.
+   These values were derived from empirical testing with self-hosted
+   LLM deployments. The calibration procedure in Section 5.5.1 is
+   mandatory regardless of starting values.
 
    10.2. Probe Set Sizing
 

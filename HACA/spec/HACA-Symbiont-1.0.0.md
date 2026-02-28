@@ -21,7 +21,9 @@ Abstract
    share the same topology (CPE, MIL, EL, SIL) but diverge on trust
    model, identity stability, and memory management policies. An
    implementation MUST NOT claim simultaneous compliance with both
-   HACA-Core and HACA-Symbiont.
+   HACA-Core and HACA-Symbiont. Unlike HACA-Core, which requires a
+   Transparent CPE topology, HACA-Symbiont is designed to operate on
+   both Transparent and Opaque CPE topologies.
 
    Security hardening (Byzantine host model, cryptographic auditability,
    temporal attack detection) is specified in HACA-Security
@@ -72,9 +74,11 @@ Table of Contents
 
    HACA-Core (draft-orrico-haca-core-07) was designed as a Zero-Trust,
    paranoid cognitive profile. Its primary directive is autonomous
-   survival in hostile or opaque environments, actively resisting all
-   forms of Semantic Drift to maintain a static, immutable Persona
-   ($\Omega$).
+   survival in hostile environments under full execution control,
+   actively resisting all forms of Semantic Drift to maintain a
+   static, immutable Persona ($\Omega$). HACA-Core requires a
+   Transparent CPE topology and is not applicable to Opaque CPE
+   deployments.
 
    HACA-Symbiont is a peer cognitive profile that replaces the
    Zero-Trust paradigm with Obligate Mutualism (High-Trust). A
@@ -170,6 +174,8 @@ Table of Contents
 
    Feature              | HACA-Core           | HACA-Symbiont
    ---------------------|---------------------|----------------------
+   CPE Topology         | Transparent Only    | Transparent &
+                        |                     | Opaque
    Primary Directive    | Autonomous Survival | Operator Symbiosis
    Environment Trust    | Zero-Trust          | High-Trust (Operator-
                         |                     | Bound)
@@ -473,6 +479,17 @@ Table of Contents
    maintenance. The Heartbeat Protocol provides an event-driven
    autonomic pulse that continuously monitors systemic health and
    triggers metabolic and immune responses.
+
+   NOTE: Opaque CPE Topology. HACA-Symbiont supports both Transparent
+   and Opaque CPE deployments (HACA-Arch Section 3.3.1). In Opaque
+   topology, the SIL cannot intercept CPE outputs before execution;
+   probe responses SHOULD use non-executable (read-only) queries to
+   avoid irreversible side-effects. Malicious Semantic Drift detection
+   (Axiom V) is degraded in Opaque topology: structural NCD monitoring
+   remains active, but behavioral probing accuracy may be reduced. The
+   Evolutionary Drift path (Axiom V) is unaffected. Operators deploying
+   HACA-Symbiont on Opaque CPEs MUST acknowledge this limitation in
+   their compliance statement.
 
    7.1. Autonomic Pulse
 
