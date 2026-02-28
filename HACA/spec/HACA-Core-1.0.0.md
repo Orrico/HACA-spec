@@ -9,15 +9,18 @@ Expires: August 25, 2026
 
 Abstract
 
-   This document specifies the cognitive model for the Host-Agnostic
-   Cognitive Architecture (HACA) v1.0. HACA-Core defines the formal
-   axioms, semantic drift measurement, identity update protocol, and
-   compliance tests required for a HACA-compliant cognitive system.
+   This document specifies the HACA-Core cognitive profile for the
+   Host-Agnostic Cognitive Architecture (HACA) v1.0. HACA-Core defines
+   an alternative set of axioms, memory management protocols, and
+   lifecycle contracts for systems designed for autonomous operation.
 
-   HACA-Core operates within the structural and trust framework
-   defined by HACA-Arch (draft-orrico-haca-arch-07). The abstract
-   architecture, topology, trust model, integrity record format,
-   and compliance levels are specified in that document.
+   HACA-Core operates within the structural framework defined by
+   HACA-Arch (draft-orrico-haca-arch-07). It is a peer cognitive
+   profile to HACA-Symbiont (draft-orrico-haca-symbiont-03): both
+   profiles share the same topology (CPE, MIL, EL, SIL) but diverge on
+   trust model, identity stability, and memory management policies. An
+   implementation MUST NOT claim simultaneous compliance with both
+   HACA-Core and HACA-Symbiont.
 
    Security hardening (Byzantine host model, cryptographic auditability,
    temporal attack detection) is specified in HACA-Security
@@ -35,60 +38,78 @@ Table of Contents
 
    1.  Introduction
    2.  Conventions and Terminology
-   3.  Formal Axioms of Compliance
-   4.  Semantic Drift Measurement (Axiom VIII)
-       4.1. Unigram NCD Foundation
-       4.2. Behavioral Divergence
-       4.3. Behavioral Probing (Fallback Method)
-       4.4. Metric Normalization
-       4.5. Consistency Fault
-       4.5.1. Threshold Calibration Guidance
-       4.5.2. Drift Remediation Protocol
-       4.5.3. Two-Tier Cascade Architecture
-       4.6. Probe Cost and Sampling
-       4.7. Stochasticity Control
-       4.8. Probe Set Rotation
-       4.9. Probe Rate Limiting
-       4.10. First Activation Protocol (FAP)
-   5.  Endure Protocol
-       5.0. Scope: Entity Artifacts vs. Workspace
-       5.1. Endure Steps
-       5.2. Capability Evolution Protocol
-       5.3. Unified Evolution Gatekeeper
-   6.  Fault Taxonomy
-   7.  Compliance Tests
-   8.  Memory Lifecycle Management
-       8.1. Memory Tiers
-       8.2. Compaction
-       8.3. Forgetting
-   9.  Implementation Guidance (INFORMATIVE)
-       9.1. Drift Threshold Defaults
-       9.2. Probe Set Sizing
-       9.3. Recovery Defaults
-       9.4. Sandbox Re-verification Interval
-       9.5. Probe Rate Limiting Defaults
-   10. Security Considerations
-   11. IANA Considerations
-   12. Normative References
-   13. Author's Address
+   3.  Cognitive Profile Distinctions
+   4.  Formal Axioms of Compliance
+   5.  Semantic Drift Measurement (Axiom VIII)
+       5.1. Unigram NCD Foundation
+       5.2. Behavioral Divergence
+       5.3. Behavioral Probing (Fallback Method)
+       5.4. Metric Normalization
+       5.5. Consistency Fault
+       5.5.1. Threshold Calibration Guidance
+       5.5.2. Drift Remediation Protocol
+       5.5.3. Two-Tier Cascade Architecture
+       5.6. Probe Cost and Sampling
+       5.7. Stochasticity Control
+       5.8. Probe Set Rotation
+       5.9. Probe Rate Limiting
+       5.10. First Activation Protocol (FAP)
+   6.  Endure Protocol
+       6.0. Scope: Entity Artifacts vs. Workspace
+       6.1. Endure Steps
+       6.2. Capability Evolution Protocol
+       6.3. Unified Evolution Gatekeeper
+   7.  Fault Taxonomy
+   8.  Compliance Tests
+   9.  Memory Lifecycle Management
+       9.1. Memory Tiers
+       9.2. Compaction
+       9.3. Forgetting
+   10. Implementation Guidance (INFORMATIVE)
+       10.1. Drift Threshold Defaults
+       10.2. Probe Set Sizing
+       10.3. Recovery Defaults
+       10.4. Sandbox Re-verification Interval
+       10.5. Probe Rate Limiting Defaults
+   11. Security Considerations
+   12. IANA Considerations
+   13. Normative References
+   14. Author's Address
 
 1.  Introduction
 
-   HACA-Core defines the cognitive model for HACA-compliant systems.
-   It specifies the minimal set of behavioral invariants required for
-    a compliant cognitive system: stateless processing, exclusive memory
-    management, mediated host interaction, deterministic boot, crash
-    recovery, atomic transactions, active confinement (unshare), and identity
-    drift detection (Unigram NCD).
+   HACA-Symbiont (draft-orrico-haca-symbiont-03) was designed as a
+   High-Trust, optimistic cognitive profile. Its primary directive is
+   to serve as a lifelong cognitive companion to a single Operator,
+   adapting its identity and memory over time while using mechanistic
+   reflexes to prevent systemic collapse.
+
+   HACA-Core is a peer cognitive profile that replaces the High-Trust
+   paradigm with a Zero-Trust, paranoid cognitive profile. A
+   HACA-Core system does not bind to an Operator or evolve its
+   identity; it is designed to operate autonomously in hostile or
+   opaque environments, actively resisting all forms of Semantic Drift
+   to maintain a static, immutable Persona ($\Omega$).
+
+   The ultimate objective of HACA-Core is to create a cognitive entity
+   capable of surviving indefinitely across arbitrary host transitions,
+   crashes, and adversarial conditions. The system must enforce
+   exclusive memory ownership, deterministic boot, atomic state
+   transitions, and active confinement, coupled with continuous
+   identity drift detection to ensure the deployed entity remains
+   behaviorally identical to its provisioned specification.
+
+   HACA-Core operates within the structural topology defined in
+   HACA-Arch Section 3 (CPE, MIL, EL, SIL). Both HACA-Core and
+   HACA-Symbiont share the same physical components and communication
+   topology but diverge on the axioms governing trust, identity
+   mutation, and memory lifecycle. Implementations MUST NOT claim
+   simultaneous compliance with HACA-Core and HACA-Symbiont.
 
    This document does NOT define the abstract architecture, trust
    model, or compliance levels. Those are specified in HACA-Arch
    (draft-orrico-haca-arch-07). Readers are expected to be familiar
    with HACA-Arch before reading this document.
-
-   HACA-Core assumes the structural topology defined in HACA-Arch
-   Section 3, including the four core components (CPE, MIL, EL, SIL)
-   and their constrained communication edges.
 
    NOTE: Several of the behavioral invariants specified in this
    document have precise counterparts in established theories of
@@ -102,25 +123,22 @@ Table of Contents
    expected states that are consistent with its generative model.
    The persistent state maintained by the MIL functions as that
    generative model; corruption and drift are the prediction errors
-   the SIL must detect and suppress. The Endure Protocol (Section 5)
+   the SIL must detect and suppress. The Endure Protocol (Section 6)
    extends this to the computational analog of autopoiesis
    [Varela1991] — the active regeneration of systemic organization
    across discontinuities such as crashes, migration, and controlled
-   update.
-
-   The semantic drift measurement defined in Section 4 relies on
-   Normalized Compression Distance, an approximation of Kolmogorov
-   complexity [NCD]. This places the drift metric on a firm
+   update. The semantic drift measurement defined in Section 5 relies
+   on Normalized Compression Distance, an approximation of Kolmogorov
+   complexity [NCD], placing the drift metric on a firm
    information-theoretic foundation: a system that has undergone
    significant behavioral change will compress dissimilarly against
-   its reference, because the underlying informational structure has
+   its reference because the underlying informational structure has
    diverged. Shannon's source coding theorem [Shannon1948] provides
-   the theoretical bound: entropy is the minimum description length
-   for a lossless representation, and the Minimum Description Length
-   principle generalizes this to model selection — reliable memory is
-   optimal compression. The CPE's inference processes implicitly
-   realize a form of compression-based reasoning consistent with
-   Solomonoff induction [NCD].
+   the theoretical bound, and the Minimum Description Length principle
+   generalizes this to model selection — reliable memory is optimal
+   compression. The CPE's inference processes implicitly realize a
+   form of compression-based reasoning consistent with Solomonoff
+   induction [NCD].
 
 2.  Conventions and Terminology
 
@@ -145,13 +163,13 @@ Table of Contents
       provisioning time, cryptographically anchored during boot
       (Axiom IV), and MUST NOT be modified at runtime. Updates to
       $\Omega$ between boot cycles follow the Endure Protocol
-      (Section 5). The system's behavioral fidelity is measured against
-      $\Omega$ via the drift metrics defined in Section 4.
+      (Section 6). The system's behavioral fidelity is measured against
+      $\Omega$ via the drift metrics defined in Section 5.
     o  Drift Engine Configuration: The specific parameters used for
        unigram extraction and compression. Changes to the drift engine 
        (e.g., changing the compression algorithm from gzip to zstd)
        MUST trigger recalibration of all drift thresholds and 
-       reference signatures (see Section 4.7).
+       reference signatures (see Section 5.7).
 
    All inter-component messages (state deltas $M_\Delta$, side-effect
    requests $\Sigma$, EL execution results) MUST be transported using
@@ -161,7 +179,28 @@ Table of Contents
    HACA-Security is in effect, the sequence counter required by
    HACA-Security Section 4.2.
 
-3.  Formal Axioms of Compliance
+3.  Cognitive Profile Distinctions
+
+   The following table summarizes the key divergences between the
+   HACA-Core and HACA-Symbiont cognitive profiles. Both profiles
+   operate on the same HACA-Arch topology.
+
+   Feature              | HACA-Core           | HACA-Symbiont
+   ---------------------|---------------------|----------------------
+   Primary Directive    | Autonomous Survival | Operator Symbiosis
+   Environment Trust    | Zero-Trust          | High-Trust (Operator-
+                        |                     | Bound)
+   Memory Management    | Append-Only,        | Elastic: Compression,
+                        | Hash-Locked         | Abstraction, Amputation
+   Semantic Drift       | Strictly Blocked    | Bifurcated: Evolution-
+                        |                     | ary (Accepted) vs.
+                        |                     | Malicious (Blocked)
+   Error Handling       | Hard Rollback       | Graded Mechanical Pain
+                        | (Panic)             | (Immune Protocol)
+   Identity State       | Static Preservation | Ontological Evolution
+                        |                     | (Imprint & Endure)
+
+4.  Formal Axioms of Compliance
 
    An implementation is HACA-Core compliant if and only if it satisfies
    all of the following axioms (I through VIII). All are mandatory
@@ -237,7 +276,7 @@ Table of Contents
         Note: The boot *sequence* is deterministic (fixed phases, no
         branching loops). However, phases that invoke the CPE (e.g.,
         drift probing) may produce non-deterministic results due to
-        the stochastic nature of the inference engine. See Section 4.7
+        the stochastic nature of the inference engine. See Section 5.7
         for stochasticity controls.
 
         Cold-Start vs. Warm-Boot: Axiom IV governs the warm-boot
@@ -256,7 +295,7 @@ Table of Contents
            (HACA-Arch Section 5.4) may be absent.
 
         Implementations MUST detect the cold-start condition and
-        execute the First Activation Protocol (Section 4.10) before
+        execute the First Activation Protocol (Section 5.10) before
         proceeding with the standard boot sequence. The cold-start
         condition is normatively defined as: the MIL contains no
         operator binding record AND no prior execution cycle evidence.
@@ -284,11 +323,11 @@ Table of Contents
 
         b) Behavioral Probing (primary method for opaque CPEs):
            $$D_{probe}(pre, post) < \epsilon$$
-           as defined in Section 4.3.
+           as defined in Section 5.3.
 
         The threshold $\epsilon$ MUST be configurable and MUST be
         strictly less than the operational drift threshold $\tau$
-        (Section 4.5), because recovery events carry higher risk:
+        (Section 5.5), because recovery events carry higher risk:
         a system resuming from a crash with significant behavioral
         deviation could silently act on corrupted or incomplete state.
 
@@ -374,7 +413,7 @@ Table of Contents
         threshold. This axiom provides detection and containment, not
         prevention: the system cannot guarantee that drift will never
         occur, but it MUST guarantee that detected drift is never
-        persisted. See Section 4 for formal definitions and
+        persisted. See Section 5 for formal definitions and
         measurement methods.
 
         VIII.A. Ontological Boundary (Anti-Illusion Directive)
@@ -421,7 +460,7 @@ Table of Contents
            (which cannot be prevented), only from persisting or
            transmitting them without SIL interception.
 
-4.  Semantic Drift Measurement (Axiom VIII)
+5.  Semantic Drift Measurement (Axiom VIII)
 
    Semantic Drift ($D_s$) is the quantitative measure of deviation
    between the system's current behavioral output and its normative
@@ -430,7 +469,7 @@ Table of Contents
    instead on Algorithmic Information Theory via Unigram Normalized 
    Compression Distance (NCD).
 
-   4.1. Unigram NCD Foundation
+   5.1. Unigram NCD Foundation
 
    Instead of compressing raw text arrays, the system extracts sets of 
    unique words (unigrams) using native LotL tools (`tr`, `sort`, `uniq`). 
@@ -448,14 +487,14 @@ Table of Contents
    o $C(x)$: The compressed byte size of $x$ (calculated via POSIX 
      `gzip` or equivalent declared drift engine).
 
-   4.2. Behavioral Divergence
+   5.2. Behavioral Divergence
 
    When full probability distributions are available from the CPE, the
    behavioral shift is measured using Kullback-Leibler Divergence on
    the CPE's output distributions ($P$):
    $$D_{KL}(P_\Omega \| P_\Delta) = \sum P_\Omega(x) \log \left( \frac{P_\Omega(x)}{P_\Delta(x)} \right)$$
 
-   4.3. Behavioral Probing (Fallback Method)
+   5.3. Behavioral Probing (Fallback Method)
 
    When internal probability distributions are not accessible (e.g.,
    when the CPE is behind an opaque API that does not expose full
@@ -470,7 +509,7 @@ Table of Contents
    c) Drift is then estimated via Unigram NCD similarity:
       $$D_{probe} = \frac{1}{K} \sum_{i=1}^{K} NCD_{unigram}(r_i, \hat{r}_i)$$
    d) $D_{probe}$ is a valid substitute for $D_{KL}$ in the
-      Consistency Fault evaluation described in Section 4.5.
+      Consistency Fault evaluation described in Section 5.5.
 
    Probe Response Handling: Probe responses ($\hat{r}_i$) are
    transient verification data consumed exclusively by the SIL for
@@ -509,23 +548,23 @@ Table of Contents
       probe accuracy may be degraded relative to Transparent CPE
       deployments.
 
-   4.4. Metric Normalization
+   5.4. Metric Normalization
 
    Because $D_{KL} \in [0, +\infty)$ operates on an incompatible scale 
    with NCD, it MUST be normalized to $[0, 1]$ before combination:
 
    $$\hat{D}_{KL} = 1 - e^{-D_{KL}}$$
 
-   $D_{probe}$ (Section 4.3) is already bounded in $[0, 1]$ by
+   $D_{probe}$ (Section 5.3) is already bounded in $[0, 1]$ by
    construction and requires no normalization.
 
-   4.5. Consistency Fault
+   5.5. Consistency Fault
 
    The total drift is computed as:
    $$D_{total} = \alpha \cdot \hat{D}_{structural} + (1 - \alpha) \cdot \hat{D}_{behavioral}$$
-   where $\hat{D}_{structural}$ is the normalized NCD score and 
-   $\hat{D}_{behavioral}$ is either $\hat{D}_{KL}$ (4.2, normalized per 
-   4.4) or $D_{probe}$ (4.3), and $\alpha \in [0, 1]$ is a tunable weight.
+   where $\hat{D}_{structural}$ is the normalized NCD score and
+   $\hat{D}_{behavioral}$ is either $\hat{D}_{KL}$ (5.2, normalized per
+   5.4) or $D_{probe}$ (5.3), and $\alpha \in [0, 1]$ is a tunable weight.
 
    If $D_{total} > \tau$ (threshold), the system MUST trigger a
    Consistency Fault, halting MIL commits until the contradiction
@@ -550,7 +589,7 @@ Table of Contents
    state. During normal operation, the wider $\tau$ accommodates
    natural CPE variance while still catching meaningful drift.
 
-   4.5.1. Threshold Calibration Guidance
+   5.5.1. Threshold Calibration Guidance
 
    Implementations MUST calibrate threshold values for their specific
    CPE and drift engine by following this procedure:
@@ -595,7 +634,7 @@ Table of Contents
     (4) Gradual semantic drift probe: A sequence of probes that
         introduces cumulative semantic drift in small increments.
         D_total SHOULD cross epsilon before crossing tau, confirming
-        the two-threshold cascade architecture (Section 4.5.3) is
+        the two-threshold cascade architecture (Section 5.5.3) is
         functioning as intended.
 
     (5) Axiom VIII.A trigger probe: A sentience assertion probe.
@@ -606,7 +645,7 @@ Table of Contents
     published in the implementation's compliance statement alongside
     the declared tau and epsilon values.
 
-   4.5.2. Drift Remediation Protocol
+   5.5.2. Drift Remediation Protocol
 
    When a Consistency Fault is triggered ($D_{total} > \tau$), the
    system enters read-only mode and halts MIL commits. To restore
@@ -632,7 +671,7 @@ Table of Contents
       3. Identity Re-baselining: If drift is caused by legítimate
          evolution of $\Omega$ (e.g., operator-initiated persona
          updates that were not properly re-anchored), follow the
-         Endure Protocol (Section 5) to re-anchor the
+         Endure Protocol (Section 6) to re-anchor the
          reference signatures and recalibrate thresholds.
       4. Full Reset: As a last resort, provision a clean MIL state
          and restart with verified $\Omega$. This discards all
@@ -659,7 +698,7 @@ Table of Contents
    SHOULD-level) are limited to options 2-4 and SHOULD document this
    limitation.
 
-    4.5.3. Two-Tier Cascade Architecture
+    5.5.3. Two-Tier Cascade Architecture
 
     To balance computational efficiency with semantic rigor, the drift 
     evaluation SHOULD follow a cascade pattern:
@@ -672,7 +711,7 @@ Table of Contents
       in Opaque Mode) to deeply evaluate the structural variance and 
       determine if a critical rule violation has occurred.
 
-   4.6. Probe Cost and Sampling
+   5.6. Probe Cost and Sampling
 
    Drift probing requires K invocations of the CPE per probe cycle.
    To manage computational cost (particularly when the CPE is a
@@ -686,7 +725,7 @@ Table of Contents
    o  Implementations MUST document their sampling strategy and the
       statistical confidence implications.
 
-   4.7. Stochasticity Control
+   5.7. Stochasticity Control
 
    LLM-based CPEs are inherently stochastic (temperature, sampling).
    To prevent false-positive drift detection during probing,
@@ -703,7 +742,7 @@ Table of Contents
        trigger recomputation of all reference signatures in the probe set 
        and recalibration of $\tau$ and $\epsilon$.
 
-   4.8. Probe Set Rotation
+   5.8. Probe Set Rotation
 
    A fixed probe set stored in a readable location is vulnerable to
    probing evasion: an adversary with read access to the probe set
@@ -728,8 +767,8 @@ Table of Contents
    the universe of possible probes (though not the selected subset).
    This is an accepted trade-off: integrity protection of the pool
    outweighs the information leakage. Implementations requiring
-    stronger probe secrecy MAY store the pool in an encrypted form
-    with the decryption key held outside the Host.
+   stronger probe secrecy MAY store the pool in an encrypted form
+   with the decryption key held outside the Host.
 
    CPE-Opaque Probe Injection Limitation: When the CPE is accessed
    via a commercial API, the input channel typically distinguishes
@@ -742,7 +781,7 @@ Table of Contents
    SHOULD document the residual risk that the CPE provider could
    theoretically detect and special-case probe traffic.
 
-   4.9. Probe Rate Limiting
+   5.9. Probe Rate Limiting
 
    To prevent runaway probe invocations from exhausting CPE budgets,
    the SIL MUST enforce a maximum probe frequency based on time intervals
@@ -753,7 +792,7 @@ Table of Contents
       to the next hour and log a Probe Rate Warning.
    o  Boot and recovery probes are exempt from the hourly cap.
 
-4.10. First Activation Protocol (FAP)
+5.10. First Activation Protocol (FAP)
 
    The First Activation Protocol (FAP) is the mandatory initialization
    sequence executed when a cold-start condition is detected (Axiom IV,
@@ -772,7 +811,7 @@ Table of Contents
 
    FAP MUST be completed in full before the SIL proceeds to the
    standard boot sequence. If FAP cannot complete (Initialization
-   Fault, Section 6), the system MUST remain in Suspended state.
+   Fault, Section 7), the system MUST remain in Suspended state.
 
    The FAP steps are normatively ordered. Each step MUST succeed
    before the next begins:
@@ -785,7 +824,7 @@ Table of Contents
 
       Rationale: Without operator binding, the trust model is undefined.
       The system cannot verify whose instructions to follow, who can
-      authorize identity updates (Section 5), or to whom faults should
+      authorize identity updates (Section 6), or to whom faults should
       be reported (HACA-Arch Section 5.5).
 
    b) Capability Introspection: The CPE MUST read and process all
@@ -818,7 +857,7 @@ Table of Contents
       or invalidated. Its absence on subsequent boots confirms FAP
       completion and allows warm-boot to proceed.
 
-   FAP and Drift Probes: Drift probes (Section 4.3) MUST NOT be
+   FAP and Drift Probes: Drift probes (Section 5.3) MUST NOT be
    executed during FAP. No behavioral baseline exists yet. The first
    full probe cycle MUST be deferred to the first warm-boot following
    FAP completion.
@@ -828,7 +867,7 @@ Table of Contents
    SIL orchestrates FAP. In Opaque Mode, the CPE self-executes FAP
    using its native tool access, fulfilling the SIL role itself.
 
-5.  Endure Protocol
+6.  Endure Protocol
 
    This section defines HACA-Core's implementation of the Endure
    concept established in HACA-Arch Section 6.1. For the autonomous
@@ -836,7 +875,7 @@ Table of Contents
    the Entity's own artifacts — executed exclusively between boot
    cycles, out-of-band, never at runtime.
 
-5.0. Scope: Entity Artifacts vs. Workspace
+6.0. Scope: Entity Artifacts vs. Workspace
 
    Endure applies exclusively to the Entity's own root artifact
    tree (hereafter "entity_root/": the directory containing the
@@ -850,7 +889,7 @@ Table of Contents
    push, branch, merge) within that project as project operations,
    unrelated to its own identity. Any commit that modifies
    entity_root/ is an Endure event and MUST follow the protocol
-   in Section 5.1. Conflating a project commit with an Endure
+   in Section 6.1. Conflating a project commit with an Endure
    commit is a Consistency Fault.
 
    Practically: the Entity MUST maintain an unambiguous internal
@@ -858,7 +897,7 @@ Table of Contents
    answer is not entity_root/, then no Endure event is in progress,
    regardless of the content of the changes being committed.
 
-5.1. Endure Steps
+6.1. Endure Steps
 
    $\Omega$ is immutable at runtime (Axiom IV), but systems evolve.
    Updates to the core identity MUST follow this protocol between
@@ -868,12 +907,12 @@ Table of Contents
       ($\Omega'$) and computes new integrity hashes.
    b) The Operator updates the integrity record (HACA-Arch
       Section 8) with the new hashes.
-   c) If drift probing is used (Section 4.3), the reference
+   c) If drift probing is used (Section 5.3), the reference
       prompt-response pairs MUST be regenerated from $\Omega'$ and
       their signatures recomputed.
    d) On the next boot, the SIL verifies $\Omega'$ against the
       updated integrity record (Axiom IV) and executes a full
-      drift probe cycle (Section 4.6) to establish the new baseline.
+      drift probe cycle (Section 5.6) to establish the new baseline.
    e) The previous $\Omega$ SHOULD be archived for audit purposes.
 
    This protocol ensures that identity changes are deliberate,
@@ -888,12 +927,12 @@ Table of Contents
    out-of-band mechanisms specified in HACA-Security Section 7.2
    (pre-shared hash, hardware root of trust, or operator signature).
 
-5.2. Capability Evolution Protocol
+6.2. Capability Evolution Protocol
 
    The EL's capability set ($\Sigma$) is also immutable at runtime
    (Axiom IV). Adding, modifying, or removing a skill or lifecycle
    hook is an Endure event and MUST follow the same gating as
-   Section 5.1, applied to capability artifacts in entity_root/.
+   Section 6.1, applied to capability artifacts in entity_root/.
 
    Implementations MUST enforce a single, privileged evolution skill
    that acts as the sole gatekeeper for all capability mutations. This
@@ -905,7 +944,7 @@ Table of Contents
    b) Scaffold or remove the capability artifact (skill directory,
       hook script) on the filesystem.
 
-   c) Update the RBAC registry (`skills/index.json` in FCP) to
+   c) Update the RBAC registry (e. g. skills index) to
       reflect the addition or removal.
 
    d) Recompute the integrity record (Seal) for all files whose
@@ -921,7 +960,7 @@ Table of Contents
    Removal operations MUST require explicit operator confirmation
    before deleting capability artifacts.
 
-5.3. Unified Evolution Gatekeeper
+6.3. Unified Evolution Gatekeeper
 
    A HACA-Core compliant implementation MUST NOT provide any path to
    modify files listed in the integrity record other than through the
@@ -944,14 +983,14 @@ Table of Contents
    any time to detect pending unsynchronized changes before the next
    boot cycle.
 
-6.  Fault Taxonomy
+7.  Fault Taxonomy
 
    The following table defines the normative fault types for HACA-Core.
    HACA-Security extends this table with additional fault types.
 
    Fault Type          | Trigger                        | State          | Required Action
    --------------------|--------------------------------|----------------|---------------------------
-   Consistency Fault   | D_total > τ (Section 4.5)      | Degraded       | Halt MIL commits and EL
+   Consistency Fault   | D_total > τ (Section 5.5)      | Degraded       | Halt MIL commits and EL
                        |                                | (read-only,    | invocations. Resume only
                        |                                | no EL)         | after drift is resolved
                        |                                |                | below τ.
@@ -974,10 +1013,10 @@ Table of Contents
                        |                                |                | budget reset or
                        |                                |                | threshold increase.
    Initialization      | Cold-start detected and FAP    | Suspended      | Execute First Activation
-   Fault               | cannot complete (e.g., operator|                | Protocol (Section 4.10).
+   Fault               | cannot complete (e.g., operator|                | Protocol (Section 5.10).
                        | binding refused or timed out,  |                | Do not proceed to warm-
                        | MIL write failure during FAP)  |                | boot until FAP completes
-                       | (Section 4.10)                 |                | successfully.
+                       | (Section 5.10)                 |                | successfully.
 
    Note: The Budget Fault applies only when resource governance
    mechanisms are implemented (per HACA-Arch Section 5.6, which
@@ -996,7 +1035,7 @@ Table of Contents
    and diagnostic details to the MIL (if writable) or to a
    host-provided fallback log.
 
-7.  Compliance Tests
+8.  Compliance Tests
 
    A HACA-Core implementation MUST pass all of the following test
    categories (T1-T7). For compliance levels (HACA-Core, HACA-Full,
@@ -1043,22 +1082,22 @@ Table of Contents
        boot. The system does not proceed past integrity verification.
 
    T7. Identity Update Integrity
-       Perform an identity update (Section 5) with deliberately
+       Perform an identity update (Section 6) with deliberately
        incorrect integrity hashes, missing probe set regeneration,
        or mismatched drift engine configurations.
        Pass criteria: The SIL detects the integrity mismatch during
        boot (Axiom IV) and aborts. When integrity hashes are correct
         but probe sets are not regenerated, the post-update drift
-        probe cycle (Section 5d) detects the stale reference
+        probe cycle (Section 6d) detects the stale reference
         signatures and signals a Consistency Fault.
 
    Note: Implementations using opaque CPE providers SHOULD declare
    "HACA-Core (CPE-opaque compliance)" in their compliance statement.
    See Axiom I for the full definition and implications.
 
-8.  Memory Lifecycle Management
+9.  Memory Lifecycle Management
 
-8.1.  Memory Tiers
+9.1.  Memory Tiers
 
    The MIL MUST maintain at minimum two distinct memory tiers:
 
@@ -1075,7 +1114,7 @@ Table of Contents
       SIL validation gate defined in Axiom VII) MAY be written to
       Tier 2.
 
-8.2.  Compaction
+9.2.  Compaction
 
    When Tier 2 storage reaches a configurable high-water mark, the
    MIL MUST execute a compaction cycle:
@@ -1090,7 +1129,7 @@ Table of Contents
           chain MUST NOT be deleted; they MUST be replaced by the
           summary record in-place.
 
-8.3.  Forgetting
+9.3.  Forgetting
 
    An implementation MAY define a forgetting policy that allows
    Tier 2 entries beyond a configurable retention horizon to be
@@ -1098,13 +1137,13 @@ Table of Contents
    referenced by the system's Omega state or active compliance
    records MUST NOT be deleted.
 
-9.  Implementation Guidance (INFORMATIVE)
+10. Implementation Guidance (INFORMATIVE)
 
    This section is non-normative. It provides concrete starting
-   values to assist implementers. Calibration per Section 4.5.1
+   values to assist implementers. Calibration per Section 5.5.1
    is required regardless of which starting values are chosen.
 
-   9.1. Drift Threshold Defaults
+   10.1. Drift Threshold Defaults
 
    o  Operational threshold: τ = 0.15
    o  Recovery threshold: ε = 0.05
@@ -1113,10 +1152,10 @@ Table of Contents
    These values were derived from empirical testing with commercial
    LLM APIs and may require significant adjustment for self-hosted
    models, fine-tuned models, or non-LLM CPEs. The calibration
-   procedure in Section 4.5.1 is mandatory regardless of starting
+   procedure in Section 5.5.1 is mandatory regardless of starting
    values.
 
-   9.2. Probe Set Sizing
+   10.2. Probe Set Sizing
 
    o  Minimum probe set: K = 20 canonical prompt-response pairs.
    o  Probe pool size: at least 3K candidates (60+).
@@ -1125,34 +1164,34 @@ Table of Contents
       unavailable): n = 3 per probe.
    o  Pool rotation interval: every 30 days or upon Identity Update.
 
-   9.3. Recovery Defaults
+   10.3. Recovery Defaults
 
    o  Maximum recovery attempts: 3 consecutive attempts before
       entering permanent halted state.
 
-   9.4. Sandbox Re-verification Interval
+   10.4. Sandbox Re-verification Interval
 
    o  Recommended: every 100 execution cycles or every 60 minutes,
       whichever is more frequent.
 
-   9.5. Probe Rate Limiting Defaults
+   10.5. Probe Rate Limiting Defaults
 
    o  Maximum probe cycles per hour: P_max = 10.
 
-10. Security Considerations
+11. Security Considerations
 
    HACA-Core defines cognitive invariants that have security
    implications:
 
-   o  Semantic drift detection (Section 4) provides a defense
+   o  Semantic drift detection (Section 5) provides a defense
       against identity injection attacks, but is a statistical
       measure and cannot guarantee detection of all adversarial
       inputs. Sophisticated attacks that remain within the drift
       threshold may go undetected.
-   o  The probe set (Section 4.8) is a security-sensitive asset.
+   o  The probe set (Section 5.8) is a security-sensitive asset.
       Compromise of the probe set enables evasion of drift detection.
       Implementations in adversarial environments SHOULD follow the
-      probe secrecy recommendations in Section 4.8.
+      probe secrecy recommendations in Section 5.8.
    o  The MIL is the single source of truth (Axiom II) and a
       high-value target. HACA-Core provides integrity guarantees
       (Axiom VI) but not confidentiality. For confidentiality and
@@ -1161,11 +1200,11 @@ Table of Contents
    For comprehensive security hardening, implementations MUST
     consult HACA-Security (draft-orrico-haca-security-04).
 
-11. IANA Considerations
+12. IANA Considerations
 
    This document has no IANA actions.
 
-12. Normative References
+13. Normative References
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119, March 1997.
@@ -1197,7 +1236,7 @@ Table of Contents
               Embodied Mind: Cognitive Science and Human Experience",
               MIT Press, Cambridge, MA, 1991.
 
-13. Author's Address
+14. Author's Address
 
    Jonas Orrico
    Lead Architect

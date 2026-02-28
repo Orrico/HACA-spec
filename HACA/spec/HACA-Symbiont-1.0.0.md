@@ -23,6 +23,10 @@ Abstract
    implementation MUST NOT claim simultaneous compliance with both
    HACA-Core and HACA-Symbiont.
 
+   Security hardening (Byzantine host model, cryptographic auditability,
+   temporal attack detection) is specified in HACA-Security
+   (draft-orrico-haca-security-04).
+
 Status of This Memo
 
    This is a draft of the HACA-Symbiont specification. It is intended
@@ -179,7 +183,7 @@ Table of Contents
    Identity State       | Static Preservation | Ontological Evolution
                         |                     | (Imprint & Endure)
 
-4.  Formal Axioms of Cybernetic Symbiosis
+4.  Formal Axioms of Compliance
 
    An implementation is HACA-Symbiont compliant if and only if it
    satisfies all of the following axioms (I through VI). All are
