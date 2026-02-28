@@ -163,7 +163,7 @@ Table of Contents
    o  HACA-Security (draft-orrico-haca-security-04): Adversarial
       hardening. Byzantine host model, cryptographic auditability,
       and temporal attack detection.
-   o  HACA-CMI (planned: draft-orrico-haca-cmi-01): Multi-system
+   o  HACA-CMI (draft-orrico-haca-cmi-01): Multi-system
       coordination protocol. Wire format, discovery, conflict
       resolution, and mesh compliance tests.
 
@@ -319,7 +319,7 @@ Table of Contents
 
    The CMI (Cognitive Mesh Interface) is the fifth vertex of the
    HACA Topology, enabling multi-system coordination. Its edges
-   are fully defined in HACA-CMI (draft-orrico-haca-cmi-01).
+   are fully defined in [HACA-CMI].
 
    Single-system implementations (e.g., a single cognitive agent
    operating in isolation) MAY omit the CMI component entirely
@@ -382,7 +382,9 @@ Table of Contents
 
    The MIL is the only component allowed to persist cognitive state.
    It MUST provide atomic read/write primitives. The MIL MUST support
-   logical partitioning by namespace to enable future CMI extension.
+   logical partitioning by namespace to enable CMI extension. The
+   CMI namespace structure (cmi/blackboard/, cmi/stream/, cmi/audit/)
+   and isolation requirements are specified in [HACA-CMI] Section 8.1.
 
    The MIL MUST enforce a single-writer discipline per namespace:
    at most one component (CPE or EL) may hold a cognitive write lock on a
@@ -414,7 +416,10 @@ Table of Contents
       filesystem paths, permitted network endpoints).
    o  actor_bindings: A mapping from actor identifiers to their
       permitted action_types and scope_constraints (RBAC). Single-
-      system deployments MAY define a single default actor.
+      system deployments MAY define a single default actor. For
+      multi-system deployments, actor_bindings are extended to
+      inter-node roles (HOST, PEER_FULL, PEER_CONTRIB, PEER_READ,
+      OBSERVER) as defined in [HACA-CMI] Section 9.1.
    o  timeout_default: The default EL action timeout applied when
       no explicit timeout is specified in the action request.
 
@@ -463,7 +468,12 @@ Table of Contents
    NOTE: The Intention Envelope is a structural contract, not a
    wire format. Implementations MAY use JSON, CBOR, s-expressions,
    or any structured encoding, provided the schema is machine-
-   verifiable and version-tagged.
+   verifiable and version-tagged. In multi-system deployments using
+   [HACA-CMI], CPE outputs that cross node boundaries are additionally
+   wrapped in a Message Envelope (cryptographically signed, per
+   [HACA-CMI] Section 7.1). The Intention Envelope and Message
+   Envelope are complementary: the former governs CPE→EL handoff
+   within a node; the latter governs EL→CMI→network transmission.
 
    Malformed Intent Fault: A fault recorded by the EL when a CPE
    output fails Intention Envelope schema validation. The fault
@@ -579,10 +589,12 @@ Table of Contents
 
    4.5. HACA-CMI
 
-   Planned: draft-orrico-haca-cmi-01. Will specify:
-   o  Multi-system coordination protocol
-   o  Wire format, discovery, conflict resolution
-   o  Mesh compliance tests
+   Specified in [HACA-CMI] (draft-orrico-haca-cmi-01). Defines:
+   o  Multi-system coordination protocol and wire format
+   o  Peer discovery (Bootstrap and Organic Introduction)
+   o  Two-plane session model (Coordination Plane / Communication Plane)
+   o  Federated memory exchange via Session Commit
+   o  Mesh fault taxonomy and compliance tests
 
    HACA-CMI is a profile-agnostic extension applicable to any
    deployment regardless of active Cognitive Profile.
@@ -663,6 +675,39 @@ Table of Contents
    sequence counters from SHOULD to MUST with 64-bit counters and
    replay detection, and Section 6 adds mandatory temporal attack
    detection with cryptographic enforcement.
+
+   5.1.2. Trust Model Extensions for Multi-System Deployments
+
+   When a node enables [HACA-CMI], the baseline trust model is
+   extended to cover inter-node interactions. The extension is
+   additive: no baseline guarantee is relaxed.
+
+   Key properties of the CMI trust extension:
+
+   o  Profile as trust ceiling: A node's Cognitive Profile governs
+      its trust behavior regardless of the Session's declared trust
+      policy. A HACA-C node in a High-Trust session still applies
+      Zero-Trust internally ([HACA-CMI] Section 4.3, Constraint 2).
+
+   o  Cryptographic peer identity: All inter-node messages are
+      authenticated via Node Identity ($\Pi$) and signed with
+      $K_{cmi}$. The three-way enrollment handshake prevents
+      impersonation ([HACA-CMI] Section 6.1.2).
+
+   o  Cognitive boundary protection: The MIL namespace isolation
+      ([HACA-CMI] Section 8.1) and Session Commit drift gate
+      ([HACA-CMI] Section 8.2) ensure that no peer-sourced content
+      enters the local cognitive namespace without SIL approval.
+      This boundary MUST NOT be bypassed.
+
+   o  Operator authority preserved: CMI participation is always
+      subordinate to Operator authorization. A node MUST NOT
+      enroll in any Session for which no Operator Authorization
+      Record exists ([HACA-CMI] Section 9.2).
+
+   For adversarial mesh environments (compromised peers, compromised
+   hosts), consult [HACA-SEC] in conjunction with [HACA-CMI]
+   Section 12.
 
    5.2. Skill Trust: Restricted
 
@@ -974,7 +1019,7 @@ Table of Contents
 
    HACA-Arch is designed for single-system deployments as the base
    case. Multi-system coordination (Cognitive Mesh) is defined in
-   HACA-CMI (planned: draft-orrico-haca-cmi-01).
+   [HACA-CMI].
 
    To ensure forward compatibility, HACA-compliant implementations
    MUST satisfy the following structural requirements:
@@ -1233,6 +1278,10 @@ Table of Contents
    [HACA-SEC] Orrico, J., "Host-Agnostic Cognitive Architecture
               (HACA) v1.0 — Security Hardening",
               draft-orrico-haca-security-04, February 2026.
+
+   [HACA-CMI] Orrico, J., "Host-Agnostic Cognitive Architecture
+              (HACA) v1.0 — Cognitive Mesh Interface",
+              draft-orrico-haca-cmi-01, February 2026.
 
    [ISO8601]  ISO, "Date and time — Representations for information
               interchange — Part 1: Basic rules", ISO 8601-1:2019,

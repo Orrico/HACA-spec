@@ -17,6 +17,7 @@ HACA does not specify inference models, storage technologies, or implementation 
 | [HACA-Core](HACA/spec/HACA-Core-1.0.0.md) | draft-06 | Autonomous Cognitive Profile — axioms, memory model, drift detection, Endure Protocol |
 | [HACA-Symbiont](HACA/spec/HACA-Symbiont-1.0.0.md) | draft-02 | Symbiont Cognitive Profile — Operator-bound cognition, CMI, multi-agent coordination |
 | [HACA-Security](HACA/spec/HACA-Security-1.0.0.md) | draft-04 | Security extension — Byzantine host model, cryptographic auditability, threat model |
+| [HACA-CMI](HACA/spec/HACA-CMI-1.0.0.md) | draft-01 | Cognitive Mesh Interface — multi-system coordination, federated memory exchange, mesh compliance |
 
 The Internet Draft is the entry point — written for developers in plain prose. The RFC-style drafts are the normative documents: precise, dense, and machine-verifiable.
 
@@ -39,6 +40,8 @@ The five mandatory and optional components form a separation of concerns:
 The memory model distinguishes **session memory** (ephemeral context), **persistent state** (durable, cross-session), and **historical record** (chronological log). Security considerations are extensive: trust boundaries between components, execution safety via least-privilege mediation, memory corruption as a threat to identity continuity, prompt injection defense, persistent state authentication, and mesh security. Critically, HACA mandates that **self-preservation MUST NOT override user authority** — the system cannot refuse authorized shutdown or replicate beyond authorization boundaries.
 
 A **Cognitive Profile** selects the complete set of axioms, memory policies, and identity lifecycle contracts for a deployment. Profiles are mutually exclusive. HACA v1.0 defines two: **Autonomous** (HACA-Core) for independent agents, and **Symbiont** (HACA-Symbiont) for Operator-bound systems.
+
+**Notation convention:** Cognitive Profiles are abbreviated by their initial letter when used in shorthand — `HACA-C` for HACA-Core, `HACA-S` for HACA-Symbiont. Future profiles follow the same pattern (`HACA-N`, etc.). Extensions (HACA-Arch, HACA-Security) are always written in full; they are not profiles and do not participate in this convention.
 
 ---
 
