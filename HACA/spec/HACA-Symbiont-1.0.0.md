@@ -63,7 +63,7 @@ Table of Contents
        8.2. Autonomic Pulse Interface (Heartbeat Contract)
        8.3. Substrate Interface (MIL Contract)
        8.4. Fault Response Interface (SIL Contract)
-   9.  Fault State Taxonomy
+   9.  Fault Taxonomy
    10. Compliance Test Suite
    11. Security Considerations
    12. IANA Considerations

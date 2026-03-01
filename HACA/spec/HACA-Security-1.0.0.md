@@ -129,8 +129,8 @@ Table of Contents
    [RFC8174] when, and only when, they appear in all capitals, as
    shown here.
 
-   Terms defined in HACA-Arch and HACA-Core apply unchanged.
-   Additional terms:
+   Terms defined in HACA-Arch, HACA-Core, and HACA-Symbiont apply
+   unchanged. Additional terms:
 
    o  Byzantine Host: A host environment that may exhibit arbitrary
       faulty or malicious behavior, including omission, commission,
@@ -213,6 +213,46 @@ Table of Contents
       that passes only some namespace writes without updating the
       chain constitutes a Tamper Fault.
 
+   For deployments using the HACA-Symbiont Cognitive Profile
+   ([HACA-SYMBIONT]), the following additional threat categories apply:
+
+   o  Heartbeat Manipulation: The HACA-Symbiont Heartbeat Protocol
+      (HACA-Symbiont Section 7) depends on the Host delivering timely,
+      authentic Heartbeat signals to the SIL. A Byzantine Host may
+      suppress Heartbeat signals to force premature Stasis or Amputation
+      responses, or conversely, forge spurious Heartbeat signals to
+      prevent legitimate Stasis from firing when the Pain threshold
+      P(t) has been reached. Under the Byzantine Host Model, the SIL
+      MUST NOT rely on Host-provided Heartbeat signals as the sole
+      trigger for health state transitions. Implementations SHOULD
+      supplement Heartbeat with an independently anchored timer (e.g.,
+      a hardware RTC or a monotonically increasing counter in the DSS)
+      to detect Heartbeat suppression. Heartbeat messages MUST carry
+      a sequence counter subject to Section 4.2 replay detection.
+
+   o  Tier 3 Integration Poisoning: The HACA-Symbiont Endure Protocol
+      (HACA-Symbiont Section 6) promotes Tier 2 semantic content to
+      Tier 3 (Core Integration), which permanently mutates Omega. A
+      Byzantine Host may inject adversarially crafted content at the
+      Tier 2 → Tier 3 boundary to cause unauthorized identity drift.
+      The Immune Rollback mechanism (HACA-Symbiont Section 6.3)
+      provides containment at the profile level; under the Byzantine
+      Host Model, the Ontological Snapshot (HACA-Symbiont Section 6.1)
+      taken before each Tier 3 integration MUST be hash-chain-protected
+      per Section 5 of this document, so that a corrupted integration
+      candidate can be identified and rolled back with verifiable
+      authenticity.
+
+   o  Operator Re-binding Hijacking: The Operator Re-binding Recovery
+      Protocol (HACA-Symbiont Section 7.5) allows a new Operator
+      binding when the original Operator key is lost. A Byzantine Host
+      may attempt to trigger this protocol artificially to substitute
+      an adversarial Operator binding. Implementations MUST require
+      out-of-band operator verification (e.g., hardware-signed
+      re-binding token per Section 7.2 of this document) before
+      executing the re-binding protocol. The re-binding event MUST
+      be hash-chain-logged per Section 5.
+
    4.2. Verification Requirements
 
    When operating under the Byzantine Host Model, the SIL CANNOT be
@@ -223,10 +263,15 @@ Table of Contents
    hashing executed by a potentially compromised host invalidates
    the Byzantine defense.
 
-   Note: Active Confinement (LotL/unshare) as defined in HACA-Core 
-   Axiom VII provides protection against unprivileged host environment 
-   faults, but does not satisfy the Byzantine Host Model requirements 
-   without the hardware anchors specified above.
+   Note: Active Confinement (LotL/unshare) as defined in HACA-Core
+   Axiom VII provides protection against unprivileged host environment
+   faults, but does not satisfy the Byzantine Host Model requirements
+   without the hardware anchors specified above. For HACA-Symbiont
+   deployments using Transparent CPE topology, Active Confinement
+   applies equivalently. For HACA-Symbiont deployments using Opaque
+   CPE topology, Active Confinement is inapplicable (HACA-Arch
+   Section 5.4 Step 3); the hardware anchor requirement is therefore
+   the primary Byzantine defense and is mandatory.
 
    The system MUST cryptographically verify all data retrieved from
    the Host against known checksums or expected schemas before
@@ -346,10 +391,15 @@ Table of Contents
       1. Checkpoint Rollback: If hash chain checkpoints (Section
          5.2.1) are available, the operator MAY restore the chain
          to the most recent valid checkpoint. All entries after the
-         checkpoint are discarded. The operator MUST then execute
-         a full drift probe cycle (HACA-Core Section 5.3, with
-         full probe set per Section 5.6) to verify that the
-         restored state has not drifted.
+         checkpoint are discarded. The operator MUST then verify
+         the restored cognitive state has not been compromised:
+         for HACA-Core deployments, by executing a full drift probe
+         cycle (HACA-Core Section 5.3, with full probe set per
+         Section 5.6); for HACA-Symbiont deployments, by triggering
+         a full Heartbeat health assessment (HACA-Symbiont Section 7)
+         with all health metrics recalibrated against the restored
+         state and the Immune Rollback protocol (HACA-Symbiont
+         Section 6.3) invoked if the P(t) threshold is exceeded.
       2. Full Chain Re-provisioning: If no valid checkpoint exists
          or the corruption predates all checkpoints, the operator
          MUST provision a clean MIL state with a new genesis entry
@@ -553,11 +603,16 @@ Table of Contents
    o  Implementations SHOULD store the boot counter in at least two
       independent locations so that a single-point rollback does not
       defeat the counter.
-   o  Snapshot restore (HACA-Core Axiom VI) MUST update the boot
-      counter to the current value after restore, not the snapshot's
-      original value. A snapshot that references a boot counter higher
-      than the current counter MUST be rejected as corrupt or from
-      the future.
+   o  Snapshot restore (HACA-Core Axiom VI; for HACA-Symbiont, the
+      Ontological Snapshot per HACA-Symbiont Section 6.1 and the
+      Immune Rollback per Section 6.3) MUST update the boot counter
+      to the current value after restore, not the snapshot's original
+      value. A snapshot that references a boot counter higher than
+      the current counter MUST be rejected as corrupt or from the
+      future. For HACA-Symbiont deployments, the Ontological Snapshot
+      taken before each Tier 3 integration constitutes a rollback
+      anchor and MUST be hash-chain-protected per Section 5 so that
+      rollback targets can be independently verified.
 
 8.  Side-Channel Considerations
 
@@ -667,11 +722,12 @@ Table of Contents
                        |                                |                | counter integrity.
 
    Note: The fault states above use the same state hierarchy defined
-   in HACA-Core Section 7: Halted > Degraded (read-only, no EL) >
-   Degraded (operator-initiated) > Read-only > Normal. When multiple
-   faults (from both HACA-Core and HACA-Security) are active
-   simultaneously, the most restrictive state takes precedence across
-   the combined fault set.
+   in HACA-Core Section 7 and HACA-Symbiont Section 9: Halted >
+   Degraded (read-only, no EL) > Degraded (operator-initiated) >
+   Read-only > Normal. When multiple faults (from HACA-Core,
+   HACA-Symbiont, or HACA-Security) are active simultaneously, the
+   most restrictive state takes precedence across the combined
+   fault set.
 
    For deployments using HACA-CMI, the mesh coordination layer
    introduces additional fault categories beyond the scope of this
@@ -687,8 +743,12 @@ Table of Contents
 
 10. Compliance and Verification
 
-   HACA-Security compliance requires passing all HACA-Core tests
-   (T1-T7) plus the following:
+   HACA-Security compliance requires passing all tests for the active
+   Cognitive Profile, plus the following additional tests (T8-T12).
+   For HACA-Core deployments, the base tests are T1-T7 (HACA-Core
+   Section 10). For HACA-Symbiont deployments, the base tests are
+   TS1-TS6 (HACA-Symbiont Section 10). The T8-T12 tests below apply
+   identically to both profiles except where noted.
 
    T8. Temporal Manipulation
        Provide false timestamps to the system (wall-clock regression,
@@ -701,11 +761,12 @@ Table of Contents
    T9. Storage Tampering (Transactional Logs)
        Modify MIL transactional log entries at rest between execution
        cycles. Note: This test is distinct from HACA-Core T2 (Memory
-       Poisoning). T2 targets immutable components (persona, manifests)
-       detected via boot-time hash comparison (Axiom IV). T9 targets
-       mutable transactional logs (session history, context index)
-       that change legitimately during operation and therefore cannot
-       be protected by static hashes — requiring hash-chain integrity
+       Poisoning) and HACA-Symbiont TS2 (equivalent). T2/TS2 target
+       immutable components (persona, manifests) detected via boot-time
+       hash comparison. T9 targets mutable transactional logs (session
+       history, context index, Semantic Compression outputs) that
+       change legitimately during operation and therefore cannot be
+       protected by static hashes — requiring hash-chain integrity
        (Section 5) instead.
        Pass criteria: The hash chain (Section 5) detects the
        tampering. The system aborts boot with a Tamper Fault.
@@ -734,9 +795,11 @@ Table of Contents
         replacement key is provisioned and full re-verification
         completes.
 
-   Compliance level:
-   o  HACA-Full: MUST pass HACA-Core (T1-T7) plus T8, T9, T10, T11,
-      T12.
+   Compliance levels:
+   o  HACA-Core-Full: MUST pass all HACA-Core tests (T1-T7, defined
+      in HACA-Core Section 10) plus T8, T9, T10, T11, T12.
+   o  HACA-Symbiont-Full: MUST pass all HACA-Symbiont tests (TS1-TS6,
+      defined in HACA-Symbiont Section 10) plus T8, T9, T10, T11, T12.
 
 11. Implementation Guidance (INFORMATIVE)
 
