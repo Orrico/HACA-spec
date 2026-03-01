@@ -85,6 +85,7 @@ Table of Contents
        9.1. Actor-Scoped Permissions (RBAC)
        9.2. Operator Authorization for CMI Channels
        9.3. Mesh Integrity
+       9.4. Session Artifact Hash-Chain Integrity
    10. Mesh Fault Taxonomy
    11. Mesh Compliance Tests
    12. Security Considerations
@@ -2385,6 +2386,62 @@ Table of Contents
    SIL SHOULD include MIF frequency across sessions in drift trend
    monitoring to detect systematic peer misbehavior.
 
+9.4. Session Artifact Hash-Chain Integrity
+
+   Each node's cmi/audit/ namespace accumulates Session Artifacts and
+   MIF records across Sessions. These records constitute the node's
+   mesh audit trail and MUST be protected with the same cryptographic
+   auditability guarantees specified in [HACA-SECURITY] Section 5.
+
+9.4.1. Chain Structure
+
+   The cmi/audit/ hash chain follows the same structure as the
+   Cryptographic Auditability chain defined in [HACA-SECURITY]
+   Section 5.1, with the following CMI-specific bindings:
+
+   a) Each Session Artifact is appended as a chain entry at Session
+      Commit time (Section 8.2). The entry includes:
+
+         entry_hash    = H(prev_entry_hash || session_id
+                           || commit_timestamp || artifact_hash)
+
+      where artifact_hash = H(serialized Session Artifact), and
+      prev_entry_hash is the hash of the preceding cmi/audit/ entry
+      (genesis entry = H("HACA-CMI-AUDIT-GENESIS" || node_pi)).
+
+   b) Each MIF record (Section 9.3.3) is appended as a chain entry
+      at the time of MIF detection. The entry includes:
+
+         entry_hash    = H(prev_entry_hash || session_id
+                           || detected_at || H(serialized MIF record))
+
+   c) The boot counter at Session Commit time MUST be included in
+      the Session Artifact chain entry to bind the artifact to the
+      node's rollback-detection state (see [HACA-SECURITY]
+      Section 7.4).
+
+9.4.2. Chain Verification
+
+   A verifier that obtains the cmi/audit/ chain and the genesis
+   value for a given node Pi can independently verify:
+
+   a) No Session Artifact has been deleted or reordered.
+   b) No MIF record has been suppressed.
+   c) The chain was produced by a node holding K_cmi (since
+      chain entries are signed under the node's local MIL signing
+      key per [HACA-SECURITY] Section 5.3).
+
+   Chain verification MUST be performed as part of the SIL's
+   periodic integrity check (Section 8.2.4 of [HACA-SECURITY]).
+
+9.4.3. Checkpoint Protocol
+
+   Large cmi/audit/ chains MAY be checkpointed following the
+   procedure in [HACA-SECURITY] Section 5.2.1. The checkpoint
+   frequency SHOULD be tuned to the Session frequency of the node.
+   A node that participates in many short Sessions SHOULD checkpoint
+   more frequently than the baseline interval.
+
 10. Mesh Fault Taxonomy
 
    This section provides a unified taxonomy of all fault conditions
@@ -3218,6 +3275,18 @@ Table of Contents
       misleading Contributions, or attempts to exfiltrate cognitive
       state via point-to-point messages.
 
+   g) Temporal attacks: An adversary that exploits clock skew or
+      timestamp manipulation to replay expired enrollment tokens,
+      bypass the 60-second clock-skew tolerance (Section 7.1),
+      invalidate valid messages, or cause nodes to accept out-of-
+      order contributions. The countermeasures in [HACA-SECURITY]
+      Section 6 (monotonic timestamp validation, logical clocks,
+      chain-based ordering) apply at the per-node level and are
+      complementary to the mesh-level clock-skew tolerance defined
+      in Section 7.1. A node MUST NOT accept any mesh message whose
+      envelope timestamp would be rejected by [HACA-SECURITY]
+      Section 6.1 if applied locally.
+
    Out of scope: Physical compromise of the host machine running
    the NUT; side-channel attacks on the CPE's inference process;
    adversarial attacks on the underlying LLM weights. These are
@@ -3236,7 +3305,9 @@ Table of Contents
 
    Mitigations:
    - $K_{cmi}$ MUST be stored with at least the same protection
-     level as the node's Core Identity anchor.
+     level as the node's Core Identity anchor. Full storage
+     requirements and rotation lifecycle are specified in
+     [HACA-SECURITY] Section 7.3.1.
    - HACA-C nodes MUST store $K_{cmi}$ in the Integrity Record
      namespace, protected by the SIL's tamper-detection mechanisms.
    - HACA-S nodes SHOULD store $K_{cmi}$ in hardware-backed storage

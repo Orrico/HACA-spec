@@ -50,7 +50,8 @@ Table of Contents
        7.1. Host Trust: Byzantine (Zero Default)
        7.2. Elevated SIL Anchor Requirements
        7.3. Cryptographic Key Management
-       7.3.1. Algorithm Requirements
+       7.3.1. CMI Enrollment Key (K_cmi) Management
+       7.3.2. Algorithm Requirements
        7.4. Rollback Attack Protection
    8.  Side-Channel Considerations
        8.1. Confidentiality (Data at Rest)
@@ -152,6 +153,12 @@ Table of Contents
       audit trails.
    o  The system operates in a multi-tenant or shared-infrastructure
       environment.
+   o  The system participates in a Cognitive Mesh via HACA-CMI
+      ([HACA-CMI]), where peer nodes may be independently operated
+      and cannot be assumed cooperative. The Byzantine Host Model
+      (Section 4) applies to the Session Host in the same way it
+      applies to the local execution Host: both may exhibit arbitrary
+      faulty or malicious behavior.
 
 4.  Byzantine Host Model
 
@@ -181,6 +188,30 @@ Table of Contents
    o  Temporal Attacks: Providing false timestamps to disrupt
       scheduling or log ordering (see Section 6).
    o  Boot Subversion: Altering immutable components before boot.
+
+   For deployments using HACA-CMI, the following additional threat
+   categories apply:
+
+   o  Compromised Peer Contributions: A peer node in a Session may
+      post adversarially crafted Blackboard Contributions designed
+      to cause identity drift, exfiltrate cognitive state, or inject
+      instructions into the receiving node's CPE. The SIL drift gate
+      (HACA-CMI Section 8.2) is the primary defense; this document's
+      sequence counter requirements (Section 4.2) MUST be extended
+      to cover CMI message channels.
+   o  Compromised Session Host: The Session Host controls Blackboard
+      ordering (host_seq), role assignment, and Contribution rejection.
+      A Byzantine Session Host can reorder, suppress, or selectively
+      deliver Contributions without cryptographic detection unless
+      per-actor hash chains (Section 5.2) are applied to the
+      cmi/audit/ namespace. See HACA-CMI Section 12.4 for the full
+      Session Host threat analysis.
+   o  Session Commit Integrity: The Session Commit protocol
+      (HACA-CMI Section 8.2) writes multiple namespaces atomically
+      to the MIL. Each namespace write MUST be covered by this
+      document's hash-chain integrity (Section 5). A partial commit
+      that passes only some namespace writes without updating the
+      chain constitutes a Tamper Fault.
 
    4.2. Verification Requirements
 
@@ -249,7 +280,15 @@ Table of Contents
    o  Batched chaining: A block contains $B$ entries, with individual
       entries within a batch using per-entry checksums.
    o  Per-actor chains: in mesh configurations, each actor maintains
-      its own hash chain, merged at synchronization points.
+      its own hash chain, merged at synchronization points. For
+      HACA-CMI deployments specifically, "per-actor" means per-node:
+      each node maintains an independent hash-chained log covering
+      its cmi/audit/ namespace (Session Artifacts). Session Artifacts
+      MUST be appended to the node's audit chain in host_seq order.
+      The "synchronization point" is the Session Commit boundary
+      (HACA-CMI Section 8.2.3): all artifact writes for a given
+      Session MUST be committed as a single chain append before the
+      node participates in a new Session.
 
    The chosen strategy MUST be documented and its integrity
    implications analyzed. Note: Batched chaining creates an
@@ -385,7 +424,8 @@ Table of Contents
 
    Implementations MUST define a key management lifecycle for all
    cryptographic material (HMAC signing keys, hash chain seeds,
-   integrity record signing keys):
+   integrity record signing keys, and — for HACA-CMI deployments —
+   the CMI Enrollment Key $K_{cmi}$; see Section 7.3.1):
 
    a) Provisioning: Keys MUST be generated outside the Host
       environment and delivered through a trusted channel. Keys
@@ -423,10 +463,41 @@ Table of Contents
          NOT resume autonomous operation until operator review.
 
    d) Key Binding: Each key MUST be bound to a specific purpose
-      (e.g., "MIL HMAC", "chain signing", "integrity record"). Keys
-      MUST NOT be reused across purposes.
+      (e.g., "MIL HMAC", "chain signing", "integrity record",
+      "CMI enrollment"). Keys MUST NOT be reused across purposes.
 
-   7.3.1. Algorithm Requirements
+   7.3.1. CMI Enrollment Key ($K_{cmi}$) Management
+
+   For implementations enabling HACA-CMI, the CMI Enrollment Key
+   ($K_{cmi}$) MUST be managed under the lifecycle defined in Section
+   7.3. Additional constraints:
+
+   a) Storage: $K_{cmi}$ MUST be stored with at least the same
+      protection level as the $\Omega$ anchor and the MIL signing
+      key. Acceptable storage locations are identical to those in
+      Section 7.3a. A $K_{cmi}$ stored within the Host's operational
+      data store without hardware protection is incompatible with
+      the Byzantine Host Model.
+
+   b) Derivation binding: Node Identity $\Pi = H(\Omega_{anchor}
+      \| K_{cmi})$ (HACA-CMI Section 3.1) binds mesh identity to
+      Core identity. Compromise of $K_{cmi}$ therefore compromises
+      $\Pi$. The Key Compromise Fault protocol (Section 7.3c) MUST
+      be applied: halt CMI participation, notify the Operator, and
+      rotate $K_{cmi}$ before re-enrolling in any Session.
+
+   c) Rotation: For HACA-S nodes, $\Pi$-Rotation (HACA-CMI Section
+      3.1) is triggered by Endure, which rotates $\Omega$ and
+      invalidates the prior $\Pi$. $K_{cmi}$ MUST be rotated in the
+      same Endure cycle. The rotation MUST be recorded in the
+      hash-chain audit log per Section 7.3b.
+
+   d) Purpose isolation: $K_{cmi}$ is exclusively for CMI enrollment
+      signatures (HACA-CMI Section 7.1 envelope_sig and ENROLL_CONFIRM
+      in Section 6.1.2). It MUST NOT be reused for MIL HMAC, chain
+      signing, or any other purpose.
+
+   7.3.2. Algorithm Requirements
 
    To ensure interoperability and baseline security, implementations
    MUST support the following cryptographic algorithms as mandatory:
@@ -596,9 +667,22 @@ Table of Contents
 
    Note: The fault states above use the same state hierarchy defined
    in HACA-Core Section 6: Halted > Degraded (read-only, no EL) >
-   Degraded (operator-initiated) > Read-only > Normal. When multiple faults (from both HACA-Core and
-   HACA-Security) are active simultaneously, the most restrictive
-   state takes precedence across the combined fault set.
+   Degraded (operator-initiated) > Read-only > Normal. When multiple
+   faults (from both HACA-Core and HACA-Security) are active
+   simultaneously, the most restrictive state takes precedence across
+   the combined fault set.
+
+   For deployments using HACA-CMI, the mesh coordination layer
+   introduces additional fault categories beyond the scope of this
+   document. These are defined in [HACA-CMI] Section 10 (Mesh Fault
+   Taxonomy), which covers: Discovery Faults, Session Establishment
+   Faults, Session Lifecycle Faults, Coordination Plane Faults,
+   Communication Plane Faults, Memory Exchange Faults, and Trust and
+   Authorization Faults. The Mesh Integrity Faults (MIF-*) defined
+   in [HACA-CMI] Section 9.3.3 interact with this document's Tamper
+   Fault: a MIF-BB-HASH or MIF-BB-SIG event that cannot be resolved
+   by the Session Host MUST be escalated to a Tamper Fault and
+   handled per Section 5.4.
 
 10. Compliance and Verification
 
@@ -720,6 +804,10 @@ Table of Contents
    [HACA-CORE] Orrico, J., "Host-Agnostic Cognitive Architecture
               (HACA) v1.0 — Core", draft-orrico-haca-core-07,
               February 2026.
+
+   [HACA-CMI] Orrico, J., "Host-Agnostic Cognitive Architecture
+              (HACA) v1.0 — Cognitive Mesh Interface",
+              draft-orrico-haca-cmi-01, February 2026.
 
    [BFT]     Lamport, L., Shostak, R., and Pease, M., "The Byzantine
               Generals Problem", ACM Transactions on Programming
