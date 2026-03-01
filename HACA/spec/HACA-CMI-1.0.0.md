@@ -868,11 +868,17 @@ Table of Contents
       (Section 5.3) and the Introducer's own $\Pi$ as endorsement.
 
    b) Recipient evaluation: The receiving node evaluates the
-      introduction. It MAY accept, defer, or reject. Acceptance
-      adds the candidate to the active contact set with a
-      INTRODUCED trust label (a sub-level of FULL, upgradeable
-      by Operator action). Rejection is silent; the Introducer
-      is not notified.
+      introduction. Before accepting, the node MUST verify that it
+      holds a WILDCARD_INTRODUCED Operator Authorization Record
+      (Section 9.2) granting standing permission to accept organic
+      introductions. If no such record exists, the introduction MUST
+      be silently rejected. This check MUST occur before any
+      contact set modification or MIL write. Only after this
+      authorization check passes may the node accept the introduction,
+      adding the candidate to the active contact set with an
+      INTRODUCED trust label (a sub-level of FULL, upgradeable by
+      Operator action). Rejection is silent; the Introducer is not
+      notified.
 
    c) Logging: Every accepted introduction MUST be logged to the
       MIL as an enrollment event: candidate $\Pi$, Introducer $\Pi$,
@@ -1074,10 +1080,21 @@ Table of Contents
 
    The enrolling node, upon receiving ENROLL_ACK:
 
-   a) Writes a Session enrollment record to its own MIL: Session ID,
+   a) Locates the TASK Contribution in the Blackboard snapshot. There
+      MUST be exactly one TASK Contribution in any valid snapshot.
+      The node MUST compute H(TASK_contribution_payload) and verify
+      that the result equals the session_task_definition_hash received
+      in the ENROLL_CHALLENGE (Step 2). If the hashes do not match,
+      the node MUST abort enrollment: it MUST NOT write a Session
+      enrollment record to the MIL, MUST NOT transition to ACTIVE,
+      and MUST send DIS_ENROLL to the Host with departure_reason
+      TASK_DEFINITION_MISMATCH. This detects Host bait-and-switch
+      between the task advertised at enrollment and the task actually
+      loaded on the Blackboard.
+   b) Writes a Session enrollment record to its own MIL: Session ID,
       Host $\Pi$, Task Definition hash, assigned role, timestamp.
-   b) Initializes its local Blackboard view from the snapshot.
-   c) Transitions to ACTIVE participation.
+   c) Initializes its local Blackboard view from the snapshot.
+   d) Transitions to ACTIVE participation.
 
 6.1.3. Enrollment Token Expiry and Revocation
 
@@ -1292,9 +1309,13 @@ Table of Contents
 
    o  timestamp: The sender's local timestamp at message creation,
       in UTC. Used for audit and stale-message detection. A message
-      with a timestamp more than the configurable clock-skew
-      tolerance in the past or future SHOULD be discarded with a
-      CLOCK_SKEW warning logged.
+      with a timestamp more than the clock-skew tolerance in the
+      past or future SHOULD be discarded with a CLOCK_SKEW warning
+      logged. The default clock-skew tolerance is 60 seconds.
+      Implementations MAY configure a different value in the range
+      5–300 seconds; values outside this range MUST NOT be used.
+      All nodes in a deployment SHOULD use the same clock-skew
+      tolerance to avoid asymmetric message acceptance.
 
    o  envelope_sig: A signature over all preceding Envelope fields
       (msg_id, session_id, sender_pi, plane, msg_type, timestamp),
@@ -1400,9 +1421,23 @@ Table of Contents
       Purpose: Announce $\Pi$ change after Endure cycle (Section 3.1).
       Payload: old_pi, new_pi, new Node Advertisement (signed with
                new $K_{cmi}$), rotation_timestamp.
-      Processing: receivers MUST suspend message acceptance from
-               old_pi immediately and re-execute authentication
-               (Section 6.2.3) against new_pi before resuming.
+      Processing: Upon receiving PI_ROTATION, a peer MUST:
+               1. Suspend acceptance of new messages from old_pi.
+               2. Accept and validate messages from old_pi whose
+                  msg envelope timestamp predates rotation_timestamp
+                  (in-flight messages sent before the rotation).
+                  Messages with timestamps at or after
+                  rotation_timestamp that carry old_pi MUST be
+                  rejected as stale-identity.
+               3. The rotating node MUST initiate the re-authentication
+                  mini-handshake (Section 6.2.3, Steps 2-3) against
+                  each affected peer immediately after broadcasting
+                  PI_ROTATION. It is the rotating node's
+                  responsibility to re-establish identity, not the
+                  receiver's. Peers that do not receive a re-auth
+                  challenge within the configurable handshake timeout
+                  (Section 6.1.2) MUST dis-enroll the peer as if it
+                  had timed out.
 
    DIS_ENROLL
       Sender: departing node. Receiver: Session Host.
@@ -1474,16 +1509,38 @@ Table of Contents
                Host-assigned sequence number, monotonically
                increasing per Session, authoritative for Blackboard
                ordering).
+      NOTE: host_seq is assigned by the Host at broadcast time; it
+      is not present in the original CONTRIB_POST and therefore is
+      not covered by the contributor's envelope_sig. This is by
+      design: the Host is the ordering authority. The contributor's
+      envelope_sig covers the CONTRIB_POST envelope fields (Section
+      7.1) and payload_hash, binding the content to its origin. The
+      host_seq field is covered by the Host's own CONTRIB_BROADCAST
+      envelope_sig, binding the ordering decision to the Host's
+      identity. Peers MUST verify both signatures: contributor's
+      envelope_sig for content authenticity, and Host's
+      CONTRIB_BROADCAST envelope_sig for ordering integrity.
 
    CONTRIB_REJECT
       Sender: Host or receiving peer (for locally invalid messages).
-      Receiver: CONTRIB_POST originator.
+      Receiver: CONTRIB_POST originator (and all peers, for Host
+               rejections — see below).
       Purpose: Notify sender that a Contribution was rejected.
       Payload: contribution_id, reason_code:
          SCHEMA_INVALID     — Payload does not conform to type schema
          TYPE_UNKNOWN       — Contribution Type not recognized
          RBAC_DENIED        — Sender lacks WRITE_BLACKBOARD permission
          SESSION_CLOSED     — Session is in CLOSING state
+      NOTE: When the Host rejects a CONTRIB_POST, it MUST broadcast
+      the CONTRIB_REJECT to ALL enrolled peers (not only the
+      originator). This ensures all peers agree on which host_seq
+      slots are rejected, maintaining a consistent view of the
+      Blackboard Integrity Chain (Section 9.3.1). A peer that
+      receives a CONTRIB_REJECT from the Host MUST mark that
+      host_seq slot as explicitly rejected in its local chain record.
+      Peer-originated rejections (for locally invalid messages) are
+      sent only to the originator and the Host; they do not carry
+      host_seq (the Host never assigned one to a rejected message).
 
    BLACKBOARD_SYNC
       Sender: Host. Receiver: specific peer (on request or after
@@ -1534,6 +1591,13 @@ Table of Contents
       superseded contribution_id. The original Contribution
       remains in the Blackboard history; the REVISION takes
       precedence for current state evaluation.
+      Precedence rule: When multiple REVISION Contributions
+      reference the same superseded contribution_id, the REVISION
+      with the highest host_seq value takes precedence. All other
+      REVISIONs of the same target are superseded by it and MUST
+      be treated as historical record only. This rule is
+      deterministic and produces the same result on all peers
+      regardless of message delivery order.
       Schema: { inherits schema of superseded type,
                 revision_rationale: string }
 
@@ -1578,9 +1642,32 @@ Table of Contents
       Receiver: one specific peer (encrypted).
       Purpose: Confidential bilateral exchange outside the
                shared channel (Section 3).
-      Payload: target_pi, encrypted_content (encrypted with a
-               session-ephemeral key negotiated at enrollment
-               or via a separate key exchange), content_type.
+      Key establishment: Before the first PRIVATE_MESSAGE
+               exchange between two nodes in a Session, they MUST
+               perform a Diffie-Hellman key exchange to derive a
+               session-scoped bilateral key $K_{p2p}$. The key
+               exchange is performed via two CONTROL messages:
+               PM_KEY_INIT (sender → target: DH public value,
+               session_id, sender_pi, nonce $N_{pm}$, signed with
+               $K_{cmi}$) and PM_KEY_ACK (target → sender: DH
+               public value, echoed $N_{pm}$, signed with
+               $K_{cmi}$). $K_{p2p}$ is derived as
+               HKDF(DH_shared_secret, $N_{pm}$ || session_id).
+               $K_{p2p}$ MUST be rotated at the start of each
+               Session; it MUST NOT persist across Sessions.
+               The Host routes PM_KEY_INIT and PM_KEY_ACK by
+               target_pi without inspecting their content.
+      Payload: target_pi, nonce $N_{msg}$ (fresh per message),
+               encrypted_content (AEAD-encrypted with $K_{p2p}$
+               and $N_{msg}$), content_type.
+               AEAD authentication covers target_pi, session_id,
+               and $N_{msg}$ as associated data, binding the
+               ciphertext to this specific message context.
+      Ordering: msg_id in the envelope (Section 7.1) provides
+               per-sender monotonic ordering. Receivers MUST
+               reject PRIVATE_MESSAGE with a msg_id not
+               greater than the last accepted msg_id from
+               that sender in this Session (replay protection).
       Note: PRIVATE_MESSAGE payloads are opaque to the Host and
             all other peers. The Host routes the message by
             target_pi but cannot read its content. The Host
@@ -1888,12 +1975,23 @@ Table of Contents
 
    When a node enrolls in a Session that already has Contributions
    on the Blackboard, the Host delivers the full current Blackboard
-   state in ENROLL_ACK (Section 7.2.1). The enrolling node MUST
-   process the snapshot through the Blackboard Manager's schema
-   validation before storing it in volatile Session State. It MUST
-   NOT apply SIL validation to the snapshot at this stage; SIL
-   validation occurs only at Session Commit, not on ingress. The
-   snapshot is Session State, not MIL state.
+   state in ENROLL_ACK (Section 7.2.1). The enrolling node MUST:
+
+   1. Verify that the snapshot's host_seq values form a complete,
+      gapless sequence starting from host_seq=1. A gap is permissible
+      only for Contributions explicitly noted as rejected in the
+      snapshot (the Host MUST include CONTRIB_REJECT records in the
+      snapshot for every rejected host_seq slot). An unexplained gap
+      MUST be treated as a potential snapshot integrity violation:
+      the node MUST request a BLACKBOARD_SYNC for the missing range
+      before proceeding. If the Host cannot explain the gap, the node
+      MUST abort enrollment with DIS_ENROLL and log a
+      FAULT-COORD-SEQ-GAP event.
+   2. Process each Contribution through the Blackboard Manager's
+      schema validation before storing it in volatile Session State.
+      It MUST NOT apply SIL validation to the snapshot at this stage;
+      SIL validation occurs only at Session Commit, not on ingress.
+      The snapshot is Session State, not MIL state.
 
    If the snapshot is large, the Host MAY deliver it incrementally
    via multiple BLACKBOARD_SYNC messages (Section 7.2.2) following
