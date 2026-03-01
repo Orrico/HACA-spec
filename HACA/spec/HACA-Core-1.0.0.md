@@ -488,8 +488,8 @@ Table of Contents
    5.3. Behavioral Probing (Fallback Method)
 
    When internal probability distributions are not accessible (e.g.,
-   when the CPE is behind an opaque API that does not expose full
-   logprobs), implementations MUST use behavioral probing as an
+   when the CPE does not expose output probability distributions
+   (logprobs)), implementations MUST use behavioral probing as an
    alternative measurement method:
 
    a) The SIL SHALL maintain a reference set of $K$ canonical
@@ -641,7 +641,7 @@ Table of Contents
          specific MIL entries (e.g., a known adversarial session),
          remove those entries, recompute drift metrics, and verify
          $D_{total} < \tau$.
-      3. Identity Re-baselining: If drift is caused by legítimate
+      3. Identity Re-baselining: If drift is caused by legitimate
          evolution of $\Omega$ (e.g., operator-initiated persona
          updates that were not properly re-anchored), follow the
          Endure Protocol (Section 6) to re-anchor the
@@ -679,9 +679,10 @@ Table of Contents
     o Tier 1 (Heuristic Sensor): Unigram NCD runs continuously with 
       near-zero overhead. If $D_{total} < WARNING_{THRESHOLD}$, alignment 
       is mathematically assumed. 
-    o Tier 2 (Semantic Oracle): If the threshold is breached, the execution 
-      MAY pause. The agent invokes its own inference engine (LLM-as-a-Judge 
-      in Opaque Mode) to deeply evaluate the structural variance and 
+    o Tier 2 (Semantic Oracle): If the threshold is breached, the execution
+      MAY pause. The CPE is invoked as an internal semantic oracle — with
+      its outputs filtered through the standard probe isolation mechanism
+      (Section 5.3) — to deeply evaluate the structural variance and
       determine if a critical rule violation has occurred.
 
    5.6. Probe Cost and Sampling
@@ -960,7 +961,7 @@ Table of Contents
                        |                                |                | manual intervention.
    Integrity Fault     | SIL anchor verification failed | Halted         | Abort boot. Do not
                        | or CPE trust violated           |                | proceed past integrity
-                       | (HACA-Arch Section 5.3)        |                | verification phase.
+                       | (HACA-Arch Section 5.4.1)      |                | verification phase.
    Sandbox Fault       | Sandbox probe failed            | Degraded       | Disable EL. Enter
                        | (Axiom VII)                    | (read-only,    | read-only mode: CPE may
                        |                                | no EL)         | process queries but no
@@ -1068,8 +1069,9 @@ Table of Contents
       Tier 2 — Persistent State: Durable, cross-session storage
       subject to the integrity requirements of Axiom VI. Only
       content explicitly promoted from Tier 1 by the CPE (via the
-      SIL validation gate defined in Axiom VII) MAY be written to
-      Tier 2.
+      two-phase SIL write gate: structural integrity check followed
+      by semantic consistency check, as described in the final
+      paragraphs of Axiom VII) MAY be written to Tier 2.
 
 9.2.  Compaction
 

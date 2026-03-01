@@ -866,7 +866,11 @@ Table of Contents
    a) Introducer: A peer already in the node's active contact set
       (FULL trust label) sends an INTRODUCTION message (Section 7.2)
       containing the candidate peer's Node Advertisement record
-      (Section 5.3) and the Introducer's own $\Pi$ as endorsement.
+      (Section 5.3), the Introducer's own $\Pi$ as endorsement, and
+      an introduction_depth field set to 0 (indicating a first-hand
+      introduction). The Introducer MUST set introduction_depth = 0.
+      Recipients MUST reject any INTRODUCTION with depth > 0 (see
+      Section 7.2.1 and FAULT-DISC-INTRO-DEPTH in Section 10.1).
 
    b) Recipient evaluation: The receiving node evaluates the
       introduction. Before accepting, the node MUST verify that it
@@ -1410,6 +1414,9 @@ Table of Contents
          PROFILE_MISMATCH   — Peer profile violates session policy
                               (e.g., HACA-C peer requesting Open
                               Session enrollment)
+         UNAUTHORIZED_PEER  — No valid Operator Authorization Record
+                              exists in the Host's MIL for this peer's
+                              $\Pi$ (Section 9.2)
 
    REVOKE_TOKEN
       Sender: Host. Receiver: invited peer.
@@ -1471,6 +1478,56 @@ Table of Contents
       Payload: session_id, close_reason (HOST_DECISION or
                BLACKBOARD_RESOLVED), final Blackboard state
                snapshot if BLACKBOARD_RESOLVED.
+
+   ROLE_ASSIGNMENT
+      Sender: Host. Receiver: all enrolled peers.
+      Purpose: Notify all peers of a role change for a specific
+               peer (Section 9.1). The Host MAY reassign a peer's
+               role at any time during an ACTIVE Session.
+      Payload: session_id, target_pi (the peer whose role changed),
+               old_role, new_role, assignment_timestamp.
+      Processing: All enrolled peers MUST update their local copy
+               of the peer's role immediately upon receiving this
+               message. Actions already in flight under the old
+               role that were authorized before assignment_timestamp
+               MUST NOT be retroactively rejected.
+
+   RESOLUTION_NOTICE
+      Sender: Host. Receiver: all enrolled peers.
+      Purpose: Announce the Host's resolution of a conflict between
+               Contributions (Section 8.4.1). Sent after the Host
+               applies its deterministic tie-breaking rule and
+               establishes the accepted Contribution set.
+      Payload: session_id, accepted_contribution_ids: [contribution_id]
+               (list of Contributions accepted as authoritative),
+               rejected_contribution_ids: [contribution_id]
+               (list of Contributions whose content is superseded
+               by the resolution), revision_requests: [contribution_id]
+               (optional list of Contributions the Host asks peers to
+               revise), resolution_rationale: string (informative).
+      Processing: All enrolled peers MUST update their local
+               Blackboard view to reflect the resolution. Rejected
+               Contributions remain in historical record but MUST
+               NOT be treated as current state.
+
+   PM_KEY_INIT
+      Sender: initiating node. Receiver: target peer.
+      Purpose: Step 1 of the bilateral DH key exchange required
+               before the first PRIVATE_MESSAGE exchange in a
+               Session (Section 7.2.3).
+      Payload: session_id, sender_pi, DH_public_value (ephemeral
+               DH public key for this Session), nonce $N_{pm}$,
+               envelope_sig (signed with $K_{cmi}$).
+
+   PM_KEY_ACK
+      Sender: target peer. Receiver: PM_KEY_INIT originator.
+      Purpose: Step 2 of the bilateral DH key exchange (Section 7.2.3).
+      Payload: session_id, sender_pi, DH_public_value (ephemeral
+               DH public key), echoed $N_{pm}$, envelope_sig
+               (signed with $K_{cmi}$).
+      After: Both nodes derive $K_{p2p} = HKDF(DH\_shared,
+               N_{pm} || session\_id)$ and may begin PRIVATE_MESSAGE
+               exchange. $K_{p2p}$ MUST be discarded at Session end.
 
 7.2.2. COORDINATION Plane Messages (Blackboard)
 
@@ -2236,8 +2293,8 @@ Table of Contents
    MUST NOT add, modify, or remove authorization records autonomously.
    All changes require a verified Operator action that produces a new
    signed configuration artifact, subject to SIL validation. This
-   aligns with HACA-Core Axiom III (Operator Authority Primacy) and
-   the Bootstrap-Only discovery policy (Section 4.1).
+   aligns with HACA-Core Axiom III (Mediated Boundary) and the
+   Bootstrap-Only discovery policy (Section 4.1).
 
    For HACA-S nodes, the Operator MAY grant the node standing
    permission to generate authorization records for INTRODUCED peers
@@ -2409,6 +2466,12 @@ Table of Contents
       prev_entry_hash is the hash of the preceding cmi/audit/ entry
       (genesis entry = H("HACA-CMI-AUDIT-GENESIS" || node_pi)).
 
+      Each chain entry MUST be authenticated using the MIL HMAC/
+      chain-signing key as defined in [HACA-SECURITY] Section 7.3,
+      purpose "chain signing." The K_cmi key (Section 3.1) MUST NOT
+      be reused for chain signing; it is reserved exclusively for
+      CMI enrollment signatures per [HACA-SECURITY] Section 7.3.1.
+
    b) Each MIF record (Section 9.3.3) is appended as a chain entry
       at the time of MIF detection. The entry includes:
 
@@ -2427,12 +2490,14 @@ Table of Contents
 
    a) No Session Artifact has been deleted or reordered.
    b) No MIF record has been suppressed.
-   c) The chain was produced by a node holding K_cmi (since
-      chain entries are signed under the node's local MIL signing
-      key per [HACA-SECURITY] Section 5.3).
+   c) The chain was produced by a node in possession of the MIL
+      chain-signing key ([HACA-SECURITY] Section 7.3, purpose
+      "chain signing"), which is provisioned by the same Operator
+      that holds K_cmi. Chain entries are authenticated with this
+      key per [HACA-SECURITY] Section 5.3.
 
    Chain verification MUST be performed as part of the SIL's
-   periodic integrity check (Section 8.2.4 of [HACA-SECURITY]).
+   periodic integrity check (Section 5.3 of [HACA-SECURITY]).
 
 9.4.3. Checkpoint Protocol
 
@@ -3030,7 +3095,7 @@ Table of Contents
       Expected: NUT transitions Session to CLOSING, executes Session
                Commit, transitions to TERMINATED.
       AUDIT-CHECK: Session Artifact written with termination_type
-                   HOST_CLOSE.
+                   NORMAL (Host-closed).
 
 11.5. Coordination Plane Compliance Tests
 
@@ -3160,8 +3225,12 @@ Table of Contents
 
       Setup: NUT completes any Session (normal or faulted).
       Expected: The Session Artifact MUST contain all 12 mandatory
-               fields. Any Session Artifact with missing mandatory
-               fields MUST be considered a commit fault.
+               fields (Section 8.2.4). The field
+               endure_candidates_flagged is HACA-S only and is
+               optional for HACA-C nodes; for HACA-S nodes, all
+               13 fields are mandatory. Any Session Artifact with
+               missing mandatory fields MUST be considered a commit
+               fault.
       AUDIT-CHECK: Verify all fields present in the written artifact.
 
    CMT-MEM-03 (REQUIRED)

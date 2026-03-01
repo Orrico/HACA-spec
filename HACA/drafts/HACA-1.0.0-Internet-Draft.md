@@ -12,7 +12,7 @@ The Host-Agnostic Cognitive Architecture (HACA) defines a structural pattern for
 
 HACA decouples the inference engine (LLM) from cognitive state by placing all persistent state in a universal storage layer. If you copy a HACA-compliant system's state directory and boot it on a different machine with a different LLM, the entity resumes exactly as it was — same personality, same agenda, same memories.
 
-This document describes the architecture at a level intended for developers wishing to build HACA-compliant systems. For the complete formal specification, see the RFC drafts in the `haca-spec/` directory.
+This document describes the architecture at a level intended for developers wishing to build HACA-compliant systems. For the complete formal specification, see the RFC drafts in the `HACA/spec/` directory.
 
 ---
 
@@ -33,7 +33,7 @@ The LLM is treated as a CPU — a powerful but ephemeral processing unit that re
 HACA consists of four distinct logical layers. They cooperate in a tight loop, but have strictly constrained communication paths — no layer may bypass its neighbors to interact with another.
 
 > [!NOTE]
-> The following diagram is a conceptual simplification of the internal data flows. For the normative directed graph and component edges, refer to `HACA-Arch-v1.0-RFC-Draft.md`.
+> The following diagram is a conceptual simplification of the internal data flows. For the normative directed graph and component edges, refer to `HACA/spec/HACA-Arch-1.0.0.md`.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -262,37 +262,48 @@ Every evolution operation MUST:
 
 ## 8. Compliance Levels
 
-HACA defines three levels of compliance. Building a system that satisfies the Core requirements is sufficient for most use cases and is where any new implementation should start.
+HACA defines six compliance levels, split across two Cognitive Profiles (HACA-Core and HACA-Symbiont). A deployment must select exactly one Cognitive Profile; the three compliance tiers then apply within that profile. The full normative compliance definitions are in `HACA/spec/HACA-Arch-1.0.0.md` Section 9.2.
 
-### HACA-Core (Required)
-The minimum set of invariants for a compliant system:
+### HACA-Core (Autonomous Profile)
+
+**HACA-Core** — minimum compliance for the Autonomous profile:
 
 - [ ] CPE is stateless across execution cycles — all persistent state lives in the MIL
-- [ ] MIL is the single source of truth — no shadow copies in memory or databases outside the MIL
-- [ ] All host interactions go through the EL — the CPE never talks to the system directly
+- [ ] MIL is the single source of truth — no shadow copies outside the MIL
+- [ ] All host interactions go through the EL — CPE never calls the system directly
 - [ ] Boot sequence performs cryptographic integrity verification of core identity files
 - [ ] All MIL state transitions are atomic — writes either fully commit or are fully discarded
-- [ ] EL actions execute within Active Confinement boundaries (host-enforced via Namespaces or equivalent isolation)
+- [ ] EL actions execute within Active Confinement boundaries (Namespaces or equivalent isolation)
 - [ ] Behavioral drift is continuously monitored via Unigram NCD; detected drift halts MIL commits
 - [ ] First Activation Protocol completes before normal operation begins (cold-start requirement)
 - [ ] Single privileged evolution gatekeeper controls all mutations to integrity-tracked files
-- [ ] Evolution operations emit ACP audit envelopes to the MIL
+- [ ] Evolution operations emit audit records to the MIL
 
-### HACA-Full (Recommended for production)
-HACA-Core plus:
+**HACA-Core-Full** — HACA-Core plus HACA-Security extension:
 
-- [ ] Cryptographic auditability: all system events signed with a host-held secret
-- [ ] Replay attack prevention: monotonic sequence counters on all messages
+- [ ] Cryptographic auditability: hash-linked logs, all events signed
+- [ ] Replay attack prevention: monotonic 64-bit sequence counters
 - [ ] Byzantine-resilient integrity anchoring (pre-shared hash, hardware root of trust, or operator signature)
+- [ ] Temporal attack detection per `HACA/spec/HACA-Security-1.0.0.md`
 
-For full cryptographic auditability and temporal attack prevention requirements, refer to `HACA-Security-v1.0-RFC-Draft.md`.
+**HACA-Core-Mesh** — HACA-Core-Full plus CMI multi-system coordination:
 
-### HACA-Mesh (Multi-agent coordination)
-HACA-Full plus:
+- [ ] Node identity derived via Pi = H(Omega_anchor || K_cmi)
+- [ ] Session-based multi-agent coordination via HACA-CMI protocol
+- [ ] Session RBAC, Blackboard integrity chain, and Session Artifacts
 
-- [ ] Multiple HACA entities coordinating via a shared MIL namespace
-- [ ] Cross-entity RBAC: each entity has a declared role and can only access authorized namespaces
-- [ ] Cognitive Mesh protocol for asynchronous inter-agent messaging
+### HACA-Symbiont (Symbiont Profile)
+
+**HACA-Symbiont** — minimum compliance for the Symbiont profile:
+
+- [ ] Operator-bound identity (Omega evolves via controlled Endure cycles)
+- [ ] High-Trust host model with Heartbeat-based health monitoring
+- [ ] Three-tier memory metabolism (Episodic Buffer → Semantic Compression → Core Integration)
+- [ ] Mechanistic self-preservation via Stasis and Immune Rollback
+
+**HACA-Symbiont-Full** — HACA-Symbiont plus HACA-Security extension (same requirements as HACA-Core-Full)
+
+**HACA-Symbiont-Mesh** — HACA-Symbiont-Full plus CMI multi-system coordination (same requirements as HACA-Core-Mesh)
 
 ---
 
@@ -391,7 +402,7 @@ This is exactly what Drift Control (Section 4) addresses. When the provider upda
 
 ## 13. Status and Contributing
 
-This Internet Draft is published for community review. The complete formal specification (with axiomatic definitions, mathematical drift metrics, and compliance test suites) is available in the `haca-spec/` directory.
+This Internet Draft is published for community review. The complete formal specification (with axiomatic definitions, mathematical drift metrics, and compliance test suites) is available in the `HACA/spec/` directory.
 
 **Feedback welcome via GitHub Issues:**
 - Is the terminology clear? Where did you get lost?
@@ -405,7 +416,9 @@ The goal of this document is to lower the barrier to entry. If something here re
 
 ## Normative References (Full Spec)
 
-- `HACA-Core-v1.0-RFC-Draft.md` (draft-orrico-haca-core-03) — Formal axioms, drift measurement math, compliance tests
-- `HACA-Arch-v1.0-RFC-Draft.md` (draft-orrico-haca-arch-03) — Abstract architecture, topology, trust model, compliance levels
-- `HACA-Security-v1.0-RFC-Draft.md` (draft-orrico-haca-security-03) — Byzantine host model, cryptographic auditability, temporal attack prevention
-- `../fcp-spec/FCP-v1.0-Internet-Draft.md` (1.0-Draft-04) — Reference implementation using the POSIX filesystem
+- `HACA/spec/HACA-Arch-1.0.0.md` (draft-orrico-haca-arch-07) — Root architecture: topology, trust model, compliance levels, Cognitive Profiles
+- `HACA/spec/HACA-Core-1.0.0.md` (draft-orrico-haca-core-07) — Autonomous Cognitive Profile: formal axioms, drift measurement, Endure Protocol, compliance tests
+- `HACA/spec/HACA-Symbiont-1.0.0.md` (draft-orrico-haca-symbiont-03) — Symbiont Cognitive Profile: Operator-bound cognition, memory metabolism, Heartbeat Protocol
+- `HACA/spec/HACA-Security-1.0.0.md` (draft-orrico-haca-security-04) — Security extension: Byzantine host model, cryptographic auditability, temporal attack prevention
+- `HACA/spec/HACA-CMI-1.0.0.md` (draft-orrico-haca-cmi-01) — Cognitive Mesh Interface: multi-system coordination, federated memory exchange, mesh compliance
+- `implementation/fcp-spec/` — FCP: Filesystem Cognitive Platform implementation profile (POSIX filesystem state layer)

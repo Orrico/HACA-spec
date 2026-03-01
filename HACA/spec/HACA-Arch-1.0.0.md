@@ -206,7 +206,7 @@ Table of Contents
       verification, component loading, and initial drift probing.
       Two distinct boot types exist: warm-boot (standard recurring
       startup with non-empty MIL) and cold-start (first activation,
-      MIL empty; triggers FAP per HACA-Core Section 4.10).
+      MIL empty; triggers FAP per HACA-Core Section 5.10).
    o  First Activation Protocol (FAP): The mandatory cold-start
       initialization sequence that all Cognitive Profiles MUST
       implement. FAP establishes the initial Omega vector, provisions
@@ -215,7 +215,7 @@ Table of Contents
       profiles MUST complete FAP before any operational state is
       accepted. The architectural FAP requirements are defined in
       Section 6 of this document; profile-specific implementations
-      are in HACA-Core Section 4.10 and HACA-Symbiont Axiom I.
+      are in HACA-Core Section 5.10 and HACA-Symbiont Axiom I.
    o  Envelope: A structured message wrapper carrying payload data
       alongside metadata (e.g., sequence counter, timestamp,
       correlation identifier, message type). The envelope format
@@ -234,6 +234,12 @@ Table of Contents
       any abnormal termination) that signals readiness for operational
       protocols such as the Heartbeat. Profile-specific DSS fields are
       defined in the active Cognitive Profile specification.
+   o  HACA-C: Shorthand for "a node or deployment using the HACA-Core
+      (Autonomous) Cognitive Profile." Used throughout the specification
+      suite when distinguishing profile-specific behavior in contexts
+      where both profiles are relevant.
+   o  HACA-S: Shorthand for "a node or deployment using the
+      HACA-Symbiont Cognitive Profile." Used symmetrically with HACA-C.
 
 3.  Structural Components (The HACA Topology)
 
@@ -298,7 +304,7 @@ Table of Contents
       and writing these results to the MIL. The Host MUST NOT
       write directly to the MIL or any other HACA component.
    o  SIL -> CPE (probe): The SIL injects verification prompts into
-      the CPE's input channel for drift probing (HACA-Core Section 4).
+      the CPE's input channel for drift probing (HACA-Core Section 5).
       Probe inputs MUST be indistinguishable from operational inputs
       at the CPE boundary.
    o  SIL -> CPE, MIL, EL (read): The SIL has read access to all
@@ -706,7 +712,7 @@ Table of Contents
       Record exists ([HACA-CMI] Section 9.2).
 
    For adversarial mesh environments (compromised peers, compromised
-   hosts), consult [HACA-SEC] in conjunction with [HACA-CMI]
+   hosts), consult [HACA-SECURITY] in conjunction with [HACA-CMI]
    Section 12.
 
    5.2. Skill Trust: Restricted
@@ -735,14 +741,19 @@ Table of Contents
    1. The SIL integrity record is verified against a known anchor.
       [FAP NOTE: On cold-start, this step corresponds to Step 1 of
       the First Activation Protocol (FAP). FAP is delegated to the
-      active Cognitive Profile (HACA-Core Section 4.10; HACA-Symbiont
-      Axiom I and Section 6.1) and MUST complete before any warm-boot
-      operational state is accepted.]
+      active Cognitive Profile (HACA-Core Section 5.10; HACA-Symbiont
+      Axiom I) and MUST complete before any warm-boot operational
+      state is accepted.]
    2. The SIL verifies all immutable components as defined by the
       active Cognitive Profile (HACA-Core Axiom IV; HACA-Symbiont
-      Axiom I and Section 6.1).
+      Axiom I and Axiom III).
    3. The SIL verifies active confinement as defined by the active
-      Cognitive Profile (HACA-Core Axiom VII; HACA-Symbiont Axiom VI).
+      Cognitive Profile (HACA-Core Axiom VII; for HACA-Symbiont in
+      Transparent CPE topology, Axiom VII applies equivalently; in
+      Opaque CPE topology, this step is replaced by the Operator
+      trust assumption per HACA-Symbiont Axiom II — the Operator's
+      authority over the opaque CPE substitutes for direct confinement
+      verification).
    4. Only after steps 1-3 succeed does the system proceed to load
       persona, skills, and MIL state.
    5. [HACA-Symbiont only] The Heartbeat Protocol is initialized as
@@ -757,7 +768,7 @@ Table of Contents
    steps 1-3 apply unchanged. However, step 4 does not proceed to
    normal operation. Instead, the system executes the First Activation
    Protocol as defined by the active Cognitive Profile (HACA-Core
-   Section 4.10; HACA-Symbiont Axiom I), which establishes operator
+   Section 5.10; HACA-Symbiont Axiom I), which establishes operator
    binding and identity consolidation before the trust model can be
    fully operational. Until FAP completes, the Operator trust anchor
    defined in Section 5 is provisionally absent, and the system MUST
@@ -864,7 +875,7 @@ Table of Contents
       enter a degraded mode (disable autonomous operation, allow
       operator-initiated queries only) when budgets are exhausted.
    o  Profile-specific verification invocations (drift probes per
-      HACA-Core Section 4; Heartbeat pulses per HACA-Symbiont
+      HACA-Core Section 5; Heartbeat pulses per HACA-Symbiont
       Section 7) SHOULD be accounted separately from operational
       CPE usage to prevent verification cycles from exhausting
       operational budgets.
@@ -951,7 +962,7 @@ Table of Contents
       source — including instructions from the Operator. Omega MAY
       only be altered by profile-defined internal processes validated
       by the SIL: for HACA-Core, via the Endure Protocol executed
-      exclusively between boot cycles (HACA-Core Section 5);
+      exclusively between boot cycles (HACA-Core Section 6);
       for HACA-Symbiont, via Tier 3 integration through the Endure
       Protocol (HACA-Symbiont Section 6). This invariant is the
       architectural enforcement of Imprint: no runtime actor may
@@ -993,12 +1004,12 @@ Table of Contents
    The universal requirements of Section 6.2 are implemented
    differently by each Cognitive Profile:
 
-   o  HACA-Core (draft-orrico-haca-core-07, Section 4.10): The FAP
+   o  HACA-Core (draft-orrico-haca-core-07, Section 5.10): The FAP
       establishes a static, immutable Omega. The Operator trust anchor
       is provisioned as a cryptographic key. The genesis Imprint is
       the permanent identity anchor. Endure is implemented as the
       Operator-driven, out-of-band Endure Protocol (HACA-Core
-      Section 5): the running Entity does not participate in identity
+      Section 6): the running Entity does not participate in identity
       updates; it validates the Operator-provided result at next boot.
       Drift from the genesis Imprint is a Consistency Fault.
 
@@ -1064,7 +1075,7 @@ Table of Contents
       an Integrity Fault.
    e) The record MUST include an identifier for the behavioral
       verification mechanism used by the active Cognitive Profile
-      (e.g., drift engine per HACA-Core Section 4.7; health
+      (e.g., drift engine per HACA-Core Section 5.7; health
       monitor configuration per HACA-Symbiont Section 7) so that
       changes to the verification mechanism are detectable at boot.
    f) The record SHOULD be stored in a well-known location
@@ -1136,7 +1147,7 @@ Table of Contents
    immediate halt and rollback of uncommitted state, as if the
    fault had been detected synchronously. The relaxed timing of
    validation MUST NOT weaken the fault response requirements
-   defined in HACA-Core Section 6.
+   defined in HACA-Core Section 7.
 
    9.3.2. Raw Inference Mode (Internal Sandbox)
 
@@ -1275,7 +1286,7 @@ Table of Contents
               (HACA) v1.0 — Symbiont",
               draft-orrico-haca-symbiont-03, February 2026.
 
-   [HACA-SEC] Orrico, J., "Host-Agnostic Cognitive Architecture
+   [HACA-SECURITY] Orrico, J., "Host-Agnostic Cognitive Architecture
               (HACA) v1.0 — Security Hardening",
               draft-orrico-haca-security-04, February 2026.
 

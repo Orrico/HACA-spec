@@ -143,8 +143,8 @@ Table of Contents
 
 3.  Applicability
 
-   HACA-Security extensions are OPTIONAL for HACA-Core compliance.
-   They are REQUIRED for HACA-Full compliance (HACA-Arch Section 9).
+   HACA-Security extensions are OPTIONAL for HACA-Core and HACA-Symbiont
+   compliance. They are REQUIRED for HACA-Full compliance (HACA-Arch Section 9).
 
    Implementations SHOULD adopt HACA-Security when any of the
    following conditions apply:
@@ -347,8 +347,8 @@ Table of Contents
          5.2.1) are available, the operator MAY restore the chain
          to the most recent valid checkpoint. All entries after the
          checkpoint are discarded. The operator MUST then execute
-         a full drift probe cycle (HACA-Core Section 4.3, with
-         full probe set per Section 4.6) to verify that the
+         a full drift probe cycle (HACA-Core Section 5.3, with
+         full probe set per Section 5.6) to verify that the
          restored state has not drifted.
       2. Full Chain Re-provisioning: If no valid checkpoint exists
          or the corruption predates all checkpoints, the operator
@@ -638,7 +638,8 @@ Table of Contents
 9.  Fault Taxonomy (Extension)
 
    HACA-Security extends the fault taxonomy defined in HACA-Core
-   Section 6 with the following additional fault types:
+   Section 7 and HACA-Symbiont Section 9 with the following additional
+   fault types:
 
    Fault Type          | Trigger                        | State          | Required Action
    --------------------|--------------------------------|----------------|---------------------------
@@ -666,7 +667,7 @@ Table of Contents
                        |                                |                | counter integrity.
 
    Note: The fault states above use the same state hierarchy defined
-   in HACA-Core Section 6: Halted > Degraded (read-only, no EL) >
+   in HACA-Core Section 7: Halted > Degraded (read-only, no EL) >
    Degraded (operator-initiated) > Read-only > Normal. When multiple
    faults (from both HACA-Core and HACA-Security) are active
    simultaneously, the most restrictive state takes precedence across
@@ -808,6 +809,10 @@ Table of Contents
    [HACA-CMI] Orrico, J., "Host-Agnostic Cognitive Architecture
               (HACA) v1.0 — Cognitive Mesh Interface",
               draft-orrico-haca-cmi-01, February 2026.
+
+   [HACA-SYMBIONT] Orrico, J., "Host-Agnostic Cognitive Architecture
+              (HACA) v1.0 — Symbiont",
+              draft-orrico-haca-symbiont-03, February 2026.
 
    [BFT]     Lamport, L., Shostak, R., and Pease, M., "The Byzantine
               Generals Problem", ACM Transactions on Programming

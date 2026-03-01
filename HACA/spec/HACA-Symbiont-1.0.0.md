@@ -731,7 +731,7 @@ Table of Contents
       immediate and MUST be logged to the MIL audit record.
       Reinstatement requires explicit Operator authorization.
 
-9.  Fault State Taxonomy
+9.  Fault Taxonomy
 
    The following table defines the normative fault states for
    HACA-Symbiont. All P(t) threshold values are implementation-
@@ -902,6 +902,10 @@ Table of Contents
    [HACA-CORE] Orrico, J., "Host-Agnostic Cognitive Architecture
               (HACA) v1.0 — Core", draft-orrico-haca-core-07,
               February 2026.
+
+   [HACA-CMI] Orrico, J., "Host-Agnostic Cognitive Architecture
+              (HACA) v1.0 — Cognitive Mesh Interface",
+              draft-orrico-haca-cmi-01, February 2026.
 
    [Clark1998] Clark, A. and Chalmers, D., "The Extended Mind",
               Analysis, 58(1), pp. 7-19, January 1998.
