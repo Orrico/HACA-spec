@@ -29,11 +29,17 @@ Abstract
    different validation requirements, and different roles in the
    Session Commit protocol.
 
-   HACA-CMI is a profile-agnostic extension. It is applicable to
-   deployments running either HACA-Core (draft-orrico-haca-core-07) or
-   HACA-Symbiont (draft-orrico-haca-symbiont-03). The active Cognitive
-   Profile governs intra-node behavior; HACA-CMI governs inter-node
-   behavior. The two layers are orthogonal and MUST NOT conflict.
+   HACA-CMI is a profile-agnostic extension in the sense that its wire
+   protocol, session model, and Blackboard mechanics are identical
+   regardless of which Cognitive Profile the participating nodes run.
+   It is applicable to deployments running either HACA-Core
+   (draft-orrico-haca-core-07) or HACA-Symbiont
+   (draft-orrico-haca-symbiont-03). The active Cognitive Profile
+   governs intra-node behavior; HACA-CMI governs inter-node behavior.
+   The two layers are orthogonal and MUST NOT conflict. Profile-specific
+   mesh policies (Section 4) define how each node type BEHAVES within
+   the common protocol — they are constraints on node behavior, not
+   variants of the protocol itself.
 
    HACA-CMI operates within the structural framework defined by
    HACA-Arch (draft-orrico-haca-arch-07), specifically the fifth-vertex
@@ -149,16 +155,21 @@ Table of Contents
    SIL-validated, and bounded — a node absorbs what is relevant and
    consistent with its identity, not everything that was said.
 
-   HACA-CMI is profile-agnostic. It is applicable to nodes running
-   either HACA-Core or HACA-Symbiont. The active Cognitive Profile
-   governs intra-node behavior and determines the trust policy that
-   the node applies within any session it participates in. A HACA-C
-   node applies Zero-Trust to all peers regardless of the session's
-   declared trust level. A HACA-S node applies its Operator-authorized
-   High-Trust model to peers within authorized sessions. The session
-   itself inherits the trust policy of its Host. These policies are
-   not negotiated between nodes; they are applied unilaterally by
-   each node to its own behavior within the session.
+   HACA-CMI's wire protocol is profile-agnostic: the message format,
+   session lifecycle, Blackboard mechanics, and discovery protocol are
+   identical for all participating nodes regardless of their active
+   Cognitive Profile. What differs between profiles is how each node
+   BEHAVES within that common protocol. The active Cognitive Profile
+   governs intra-node behavior and determines the trust policy, drift
+   gate, and memory integration rules the node applies during and after
+   a session. A HACA-C node applies Zero-Trust to all peers regardless
+   of the session's declared trust level. A HACA-S node applies its
+   Operator-authorized High-Trust model to peers within authorized
+   sessions. The session itself inherits the trust policy of its Host.
+   These policies are not negotiated between nodes; they are applied
+   unilaterally by each node to its own behavior within the session.
+   The profile-specific constraints in Section 4 are behavioral
+   constraints on each node type, not variants of the HACA-CMI protocol.
 
    This document specifies: the Node and Session topology model
    (Section 3); profile-specific mesh policies and cross-profile

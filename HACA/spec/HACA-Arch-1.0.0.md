@@ -403,6 +403,17 @@ Table of Contents
    thereof, provided the atomic and single-writer invariants are
    satisfied.
 
+   Note on Byzantine deployments: The MIL's atomic write primitives
+   guarantee that a write is internally consistent, but they do not
+   by themselves prevent a Byzantine Host from modifying storage
+   between the completion of the write and the SIL's subsequent hash
+   chain update (TOCTOU window). For deployments applying HACA-Security
+   ([HACA-SECURITY]), the atomicity requirement extends to include the
+   SIL hash chain append: the write and the corresponding hash commit
+   MUST be treated as a single indivisible unit. See [HACA-SECURITY]
+   Section 4.2 (MIL Write and Hash Atomicity) for normative
+   requirements and implementation options.
+
    3.5. Execution Layer (EL)
 
    The EL MUST encapsulate all system capabilities. No CPE output

@@ -273,6 +273,32 @@ Table of Contents
    Section 5.4 Step 3); the hardware anchor requirement is therefore
    the primary Byzantine defense and is mandatory.
 
+   Opaque CPE Audit Scope (HACA-Symbiont only): When a HACA-Symbiont
+   deployment operates under an Opaque CPE topology (HACA-Arch Section
+   3.3.1), the cryptographic auditability requirements of Section 5
+   MUST be applied exclusively at the I/O boundary of the CPE. The
+   SIL attests to the integrity and ordering of CPE inputs and outputs;
+   it cannot attest to internal cognitive derivation, which is by
+   definition not observable. This is a fundamental and acknowledged
+   limitation of the Opaque topology.
+
+   Implementations operating in this configuration MUST:
+   a) Explicitly declare in their compliance statement that SIL
+      auditability covers CPE I/O boundaries only, not internal
+      reasoning.
+   b) NOT claim full Byzantine-grade cognitive auditability. The
+      attestation boundary MUST be clearly scoped in all compliance
+      documentation.
+   c) Apply the hash-chain integrity of Section 5 to the inputs
+      delivered to the CPE and to the outputs received from it, so
+      that the record of what the CPE was asked and what it answered
+      is tamper-evident, even if the derivation between the two is not.
+
+   This limitation does not prevent HACA-Symbiont Opaque deployments
+   from achieving HACA-Full compliance; it requires that such
+   deployments accurately represent their audit scope rather than
+   claiming guarantees they cannot provide.
+
    The system MUST cryptographically verify all data retrieved from
    the Host against known checksums or expected schemas before
    incorporating it into MIL state.
@@ -298,6 +324,34 @@ Table of Contents
       during boot. The counter state MUST be tracked in a Dynamic
       Sentinel Stream or hash chain metadata to prevent counter reset
       attacks, and MUST NOT be forced into the static Integrity Record.
+
+   MIL Write and Hash Atomicity: Under the Byzantine Host Model, a
+   Host with write access to the storage layer may modify MIL data
+   between the moment the MIL completes a write and the moment the
+   SIL appends the corresponding hash chain entry — a Time-of-Check
+   to Time-of-Use (TOCTOU) window. To eliminate this window,
+   implementations MUST satisfy one of the following conditions:
+
+   a) Atomic commit: The MIL write and the SIL hash chain append MUST
+      be executed as a single atomic operation within the storage
+      layer. If the storage backend supports transactions (e.g., a
+      database with ACID guarantees), the write and the hash update
+      MUST be in the same transaction. If the storage backend does not
+      support transactions, implementations MUST use an equivalent
+      mechanism (e.g., write-then-rename with the hash computed over
+      the final content before the rename commits the write).
+
+   b) TEE-anchored sealing: If the SIL runs within a hardware enclave
+      (TEE) per Section 4.2, the hash MAY be computed by the enclave
+      immediately upon receiving the write, before control returns to
+      the Host. In this configuration, the Host cannot modify the data
+      between hash computation and chain append because both operations
+      occur inside the trusted boundary.
+
+   Implementations that cannot satisfy either condition MUST document
+   the residual TOCTOU window in their compliance statement and treat
+   all MIL reads during boot verification as potentially tampered until
+   the hash chain confirms integrity.
 
 5.  Cryptographic Auditability
 
