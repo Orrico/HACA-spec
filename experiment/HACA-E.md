@@ -28,13 +28,13 @@ From this premise, five components and five axioms follow. The components define
 
 **Entity** — A HACA-E compliant autonomous agent. Defined as the runtime product of `entity_root/`, a model, and an Operator binding.
 
-**`entity_root/`** — An abstraction for the entity's persistent state store. Implementations MAY realize this as a filesystem directory, a database, a structured object store, or any equivalent persistent medium. The logical namespaces defined within it — `state/`, `memory/`, `skills/` — are organizational partitions whose physical layout is implementation-defined. The invariant requirement is that the contents are portable: moving the state store to a different host MUST produce a functionally equivalent entity on next boot.
+**`entity_root/`** — An abstraction for the entity's persistent state store. Implementations MAY realize this as a filesystem directory, a database, a structured object store, or any equivalent persistent medium. The logical namespaces defined within it — `state/`, `memory/`, `skills/`, `persona/` — are organizational partitions whose physical layout is implementation-defined. The invariant requirement is that the contents are portable: moving the state store to a different host MUST produce a functionally equivalent entity on next boot.
 
 **Operator** — The single designated human who binds to an entity at Imprint. The Operator is the entity's maximum external authority.
 
 **Model** — The stateless inference engine (LLM) used by the CPE for reasoning. The model retains no state between cognitive cycles.
 
-**Persona** — The entity's persistent identity layer, stored in `entity_root/`. Defines the entity's behavioral constraints, drives, and character.
+**Persona** — The entity's persistent identity layer, stored in `entity_root/persona/`. Defines the entity's behavioral constraints, drives, and character. The persona is initialized from the Imprint Record at birth and evolves independently via `persona-calibration` Endure commits. The Imprint Record retains a snapshot of the persona's initial state as an immutable reference; the operational persona in `entity_root/persona/` is the live, evolvable version loaded by the CPE at every boot.
 
 **Omega** — The gestalt identity of the entity at any given moment. The runtime product of `entity_root/`, the model, and the Operator binding operating together.
 
@@ -44,13 +44,15 @@ From this premise, five components and five axioms follow. The components define
 
 **Conatus** — The entity's mechanical self-preservation reflex, enacted by the SIL without CPE involvement.
 
-**Inference Drift** — A CPE output that contradicts verified MIL state. Classified as noise and discarded by the SIL.
+**Inference Drift** — A CPE intent payload that contradicts verified MIL state. Detected by the SIL at the boundary between Phase 3 and Phase 4 of the Cognitive Cycle, before any intent is dispatched. Payloads classified as inference drift are discarded without being forwarded to their target component. The drift event is logged to the MIL and counted toward the Heartbeat Pulse Counter.
 
 **Integrity Document** — A file stored in `entity_root/` containing the cryptographic hash of every vital file across all components. Generated at Imprint and updated at every Endure commit.
 
 **Session Token** — A scoped authorization credential issued by the SIL at Session Boot and valid across all Cognitive Cycles within that session. Required for all inter-component operations except Health Bus signals. The token may be renewed or invalidated by the SIL between Cognitive Cycles, but is never issued or revoked mid-cycle.
 
 **Cognitive Cycle** — A single end-to-end processing loop: stimulus received → context loaded → intent generated → action executed → state persisted.
+
+**Operator Channel** — A persistent, direct communication path between the SIL and the Operator, established during the FAP and maintained for the entity's lifetime. The Operator Channel operates independently of the session token and the normal bus architecture. It is the sole channel through which the SIL contacts the Operator directly, used for: critical escalation, skill operation approval, and `sync` confirmation. Its physical form is implementation-defined and consistent with the enrollment mechanism used during the FAP. The behavior of the Operator Channel when the Operator is unavailable — including timeout handling and fallback state — is implementation-defined.
 
 ### 2.2. Component Abbreviations
 
@@ -100,7 +102,7 @@ Function: Each component emits its own localized health signals indicating degra
 
 The SIL operates reactively by default, monitoring signals without intercepting every operation. This prevents it from becoming a bottleneck on normal activity. However, it retains the authority to intervene proactively in pre-defined high-risk scenarios, blocking or halting operations before they complete.
 
-When a condition is severe enough to require escalation, the SIL contacts the Operator directly — bypassing the CPE entirely. This is by design: the CPE may itself be the source of the anomaly, and routing an alert through a potentially compromised component would defeat the purpose. The Operator is the maximum authority; the SIL is the mechanism that reaches them when no internal resolution is possible. This relationship — the SIL watching over the system while the Operator watches over the SIL — is the entity's answer to the question of who guards the guardian.
+When a condition is severe enough to require escalation, the SIL contacts the Operator via the Operator Channel — bypassing the CPE entirely. This is by design: the CPE may itself be the source of the anomaly, and routing an alert through a potentially compromised component would defeat the purpose. The Operator is the maximum authority; the SIL is the mechanism that reaches them when no internal resolution is possible. This relationship — the SIL watching over the system while the Operator watches over the SIL — is the entity's answer to the question of who guards the guardian.
 
 ### 3.5. Cognitive Mesh Interface (CMI)
 
@@ -152,7 +154,7 @@ Knowledge absorption from the mesh is strictly unilateral: the receiving entity 
 
 ## 5. Inter-Component Communication Protocols
 
-All communication between components is governed by a session token issued by the SIL at the start of each cognitive cycle. With the exception of the Health Bus, no component accepts input from another without a valid session token. If the SIL invalidates the token, all in-flight operations across all buses fail immediately.
+All communication between components is governed by a session token issued by the SIL at Session Boot and valid across all Cognitive Cycles within that session. With the exception of the Health Bus, no component accepts input from another without a valid session token. If the SIL invalidates the token, all in-flight operations across all buses fail immediately.
 
 Each component is registered at Imprint with a fixed identity used exclusively on the Health Bus. This identity is separate from the session token and does not expire, ensuring the SIL retains visibility into component state even during token invalidation or system recovery.
 
@@ -160,7 +162,7 @@ Each component is registered at Imprint with a fixed identity used exclusively o
 
 **Participants:** SIL → CPE
 
-The SIL initiates each cognitive cycle by issuing a session token to the CPE. The token is scoped to the current cycle and propagates with every operation the CPE authorizes. The SIL may invalidate the token at any point in response to a critical health signal, immediately halting all token-dependent operations across all buses.
+The SIL initiates the Session Cycle by issuing a session token to the CPE. The token is scoped to the current session and propagates with every operation the CPE authorizes across all Cognitive Cycles within it. The SIL may invalidate the token at any point in response to a critical health signal, immediately halting all token-dependent operations across all buses.
 
 ### 5.2. Context Bus
 
@@ -211,6 +213,8 @@ The CPE requests context from the MIL via the Context Bus. The MIL retrieves and
 The CPE processes the stimulus against the loaded context. The persona's constraints and drives engage with the model's analytical capacity, producing a decision. If the CPE requires unfiltered reflection before deciding, it may invoke the Persona Bypass internally — the result of that raw inference stays within the CPE and does not affect the cycle's external behavior directly.
 
 The output of this phase is one or more intent payloads, each carrying the session token and targeting a specific component — EXEC for actions, MIL for state writes, or CMI for outbound mesh communication.
+
+Before any payload is dispatched, the SIL performs an Inference Drift check: it compares each payload's proposed state changes against the current verified MIL state. Any payload that contradicts persisted state is classified as inference drift, discarded, and logged. The drift event increments the Heartbeat Pulse Counter. Only payloads that pass this check proceed to Phase 4.
 
 ### 6.4. Phase 4: Execution
 
@@ -296,7 +300,7 @@ A partial FAP — one that was interrupted before writing to `memory/` — leave
 
 The FAP is a sequential, gated pipeline. Each phase must complete successfully before the next begins. Failure at any phase aborts the FAP, leaves `memory/` empty, and exits. The entity cannot start.
 
-**Phase 1 — Structural Validation:** The SIL inspects all vital component files for structural soundness and content validity. No cryptographic hashes exist at this stage — validation is based on file structure, required fields, and internal consistency. If any vital file is absent, malformed, or internally inconsistent, the FAP aborts and logs the failure. The error is surfaced to the host environment before exit.
+**Phase 1 — Structural Validation:** The SIL inspects all vital component files for structural soundness and content validity. This includes the files in `persona/`, which must be present and non-empty — they constitute the entity's initial persona and are provided as part of the deployment package before the FAP runs. No cryptographic hashes exist at this stage — validation is based on file structure, required fields, and internal consistency. If any vital file is absent, malformed, or internally inconsistent, the FAP aborts and logs the failure. The error is surfaced to the host environment before exit.
 
 **Phase 2 — Environment Capture:** The SIL interrogates the host environment — runtime identifiers, available capabilities, filesystem paths, and execution context — and writes a structured environment snapshot to `state/`. This snapshot anchors the entity to its initial execution context and serves as baseline for future environment drift detection.
 
@@ -305,12 +309,12 @@ The FAP is a sequential, gated pipeline. Each phase must complete successfully b
 - **Name** — the Operator's human-readable identity.
 - **Email** — the Operator's contact address, used as a unique anchor for the binding.
 
-Both fields are mandatory. The FAP does not proceed until both are provided and non-empty. From the supplied values, the SIL generates a deterministic Operator Hash — a cryptographic digest of the name and email fields combined. This hash becomes the stable, verifiable identifier for the Operator binding throughout the entity's lifetime.
+Both fields are mandatory. The FAP does not proceed until both are provided and non-empty. From the supplied values, the SIL generates a deterministic Operator Hash — a cryptographic digest of the name and email fields combined. This hash becomes the stable, verifiable identifier for the Operator binding throughout the entity's lifetime. Upon successful enrollment, the enrollment channel is promoted to the permanent Operator Channel — the entity's sole direct path to the Operator for the remainder of its operational lifetime.
 
 **Phase 4 — Imprint Record Generation:** The SIL assembles the Imprint Record — the foundational document that defines what the entity is at birth. The Imprint Record contains:
 
-- The entity's initial persona: behavioral constraints, drives, and character.
-- The entity's declared capabilities and operational limits.
+- A snapshot of the initial persona state from `persona/` at the moment of Imprint, retained as an immutable origin reference.
+- The entity's declared capabilities and operational limits, including the correctable-files list: the set of component files eligible as targets for `self-correction` Endure commits.
 - The Operator binding: name, email, and Operator Hash.
 - The model identifier in use at the time of Imprint.
 - The Imprint timestamp.
@@ -357,7 +361,7 @@ The Pulse Counter is reset to zero after each successful Heartbeat check that re
 
 When the Pulse Counter reaches a predefined threshold `T`, the SIL triggers a Vital Check between the current and next Cognitive Cycle. The Vital Check queries the current health state of all components via the Health Bus:
 
-- **CPE** — checks for unresolved intent failures, context window saturation, or repeated inference drift events.
+- **CPE** — checks for unresolved intent failures, active state saturation, or repeated inference drift events.
 - **MIL** — verifies `state/` and `memory/` integrity, monitors storage limits, and checks for fragmented or unresolved staged data.
 - **EXEC** — audits the execution log in the MIL for elevated error rates, timeout frequency, or unresolved action failures.
 - **CMI** — checks for unverified inbound mesh packets, channel integrity, and outbound transmission failures.
@@ -370,7 +374,7 @@ The Vital Check produces one of three outcomes:
 
 **Degraded (Yellow):** One or more components report a non-critical anomaly. The SIL applies a localized corrective response autonomously — flushing saturated MIL buffers, dropping unverified CMI packets, or flagging repeated EXEC failures for CPE review. The anomaly is logged to the MIL. Active operation continues. The Pulse Counter is not reset until the condition clears.
 
-**Critical (Red):** A severe condition is detected — structural tampering identified via the Integrity Document, a Degraded condition that resisted automated correction, or a component that has become unresponsive. The SIL invalidates the session token immediately, halting all active Cognitive Cycles. Depending on the nature of the condition, the SIL either triggers a Sleep Cycle for recovery, or escalates directly to the Operator via a channel that bypasses the CPE entirely.
+**Critical (Red):** A severe condition is detected — structural tampering identified via the Integrity Document, a Degraded condition that resisted automated correction, or a component that has become unresponsive. The SIL invalidates the session token immediately, halting all active Cognitive Cycles. Depending on the nature of the condition, the SIL either triggers a Sleep Cycle for recovery, or escalates directly to the Operator via the Operator Channel.
 
 ### 9.4. Scheduled Consolidation Trigger
 
@@ -391,10 +395,10 @@ The Endure Protocol defines a set of named operations. Each operation has a decl
 | Operation | Initiated by | Scope |
 |---|---|---|
 | `memory-consolidation` | Entity | `memory/` |
-| `add-skill` | Entity or Operator | `skills/skill_name/`, `skills/index` |
-| `remove-skill` | Entity or Operator | `skills/skill_name/`, `skills/index` |
-| `update-skill` | Entity or Operator | `skills/skill_name/` |
-| `persona-calibration` | Entity | Persona files within `entity_root/` |
+| `add-skill` | Entity (proposed), Operator (approved) | `skills/skill_name/`, `skills/index` |
+| `remove-skill` | Entity (proposed), Operator (approved) | `skills/skill_name/`, `skills/index` |
+| `update-skill` | Entity (proposed), Operator (approved) | `skills/skill_name/` |
+| `persona-calibration` | Entity | `persona/` |
 | `self-correction` | Entity | Declared component file |
 | `sync` | Operator only | Read-only: persists the current `entity_root/` state to a remote location configured by the Operator. The transport mechanism (repository, object storage, API, or equivalent) is implementation-defined. Does not modify `entity_root/` locally. |
 
@@ -404,28 +408,29 @@ The `sync` operation is the sole mechanism for persisting `entity_root/` to a re
 
 Endure operates as a sequential, gated pipeline. Each phase must complete successfully before the next begins. Failure at any phase aborts the commit and leaves `entity_root/` unchanged.
 
-**Phase 1 — Staging:** The proposed changes are written to an isolated `entity_root/staging/` directory. The original files in `entity_root/` remain untouched. The entity continues to operate from the current state while staging is prepared.
+**Phase 1 — Staging:** The proposed changes are written to an isolated staging area within `entity_root/`. The original state remains untouched. The entity continues to operate from the current state while staging is prepared. The physical layout of the staging area is implementation-defined, consistent with the `entity_root/` abstraction.
 
 **Phase 2 — SIL Validation:** The SIL inspects the staged files against the declared operation and its defined scope. It verifies that:
 - The proposed changes do not alter the Operator binding or the Imprint Record.
 - No file outside the declared operation's scope is modified.
 - The staged files are structurally sound and pass integrity checks.
-- For skill operations (`add-skill`, `update-skill`): the skill manifest is present, well-formed, and declares all required fields including permissions.
-- For `sync`: the operation is confirmed as Operator-initiated before proceeding.
+- For skill operations (`add-skill`, `remove-skill`, `update-skill`): the skill manifest is present, well-formed, and declares all required fields including permissions. The SIL then suspends the commit and notifies the Operator via the Operator Channel, presenting the proposed changes for review. The commit does not proceed until the Operator explicitly approves. If the Operator rejects or does not respond within an implementation-defined timeout, the staging area is cleared and the commit is aborted.
+- For `self-correction`: the SIL validates that the declared target file appears in the correctable-files list recorded in the Imprint Record. Any `self-correction` targeting a file not in that list is rejected as out-of-scope and the commit is aborted.
+- For `sync`: the operation is confirmed as Operator-initiated via the Operator Channel before proceeding.
 
-If validation fails, the staging directory is cleared and the commit is aborted. The SIL logs the failure and, if the attempted change was anomalous, escalates to the Operator.
+If validation fails, the staging area is cleared and the commit is aborted. The SIL logs the failure and, if the attempted change was anomalous, escalates to the Operator.
 
 **Phase 3 — Sleep Cycle Halt:** Active operation is fully suspended. The session token is held. No new Cognitive Cycles may begin until the commit completes. Before proceeding, the SIL takes a full snapshot of the current `entity_root/` state. This snapshot is retained until the commit either completes successfully or is rolled back, and serves as the recovery baseline for Phase 4 failure.
 
-**Phase 4 — Root Commit:** The SIL moves the validated files from `staging/` into their target locations within `entity_root/`, overwriting previous versions. This operation is atomic — either all files are committed or none are.
+**Phase 4 — Root Commit:** The SIL moves the validated files from the staging area into their target locations within `entity_root/`, overwriting previous versions. This operation is atomic — either all files are committed or none are.
 
 **Phase 5 — Integrity Document Update:** The SIL recomputes the cryptographic hashes of all affected files and updates the Integrity Document in `entity_root/`. The new document reflects the entity's evolved legitimate state.
 
-**Phase 6 — Resume:** The staging directory is cleared. The session token is reissued. Active operation resumes. The entity continues as its evolved self.
+**Phase 6 — Resume:** The staging area is cleared. The session token is reissued. Active operation resumes. The entity continues as its evolved self.
 
 ### 10.3. Endure Constraints
 
-- An Endure commit MUST NOT modify the Imprint record or the original Operator binding without explicit Operator authorization.
+- An Endure commit MUST NOT modify the Imprint Record or the original Operator binding without explicit Operator authorization.
 - An Endure commit MUST NOT be initiated by the CPE unilaterally during active operation — it requires a Sleep Cycle context.
 - Consecutive Endure commits within the same Sleep Cycle are permitted, provided each passes Phase 2 validation independently.
 - If Phase 4 fails mid-commit, the SIL MUST restore the previous state from a pre-commit snapshot taken at the start of Phase 3.
