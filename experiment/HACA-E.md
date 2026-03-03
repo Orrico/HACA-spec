@@ -10,11 +10,11 @@ date: 2026-03-02
 
 ## Abstract
 
-Most AI architectures treat the model as the agent. HACA does not. A language model — however capable — is infrastructure: it reasons when invoked, but the authority over what it is, what it remembers, and how it behaves belongs to no one in particular. It resides with the provider, opaque and non-portable.
+HACA (Host-Agnostic Cognitive Architecture) is a structural specification for cognitive entities built on top of language models. It defines the components, protocols, and invariants required for an entity to maintain persistent identity, verifiable state, and mediated execution across heterogeneous host environments.
 
-HACA (Host-Agnostic Cognitive Architecture) transfers that authority to the Operator — the human to whom the entity belongs. The entity's complete state resides in the **Entity Store** — the persistent, portable collection of everything the entity is and has ever been: its identity, memories, skills, and history. The Entity Store is an abstraction; the implementation chooses the substrate — a directory, a database, an object store, or any equivalent. The Operator owns it entirely. Moving the Entity Store to a different host is sufficient to restore the entity exactly where it left off, with any inference engine. The model is replaceable; the entity is not.
+In HACA, the language model is infrastructure — a stateless inference engine external to the entity. The entity's persistent state resides entirely in the **Entity Store**, an implementation-agnostic data store owned and controlled by the Operator. Migrating the Entity Store to a different host, with any compatible inference engine, fully restores the entity to its last verified state.
 
-HACA-Spec defines the shared structural topology through two axes: five foundational concepts that define what an entity is (Entity, Cognition, Memory, Integrity, Individuation), and five structural components that define how it operates (CPE, MIL, EXEC, SIL, CMI). It also defines two Cognitive Profiles in Section 2.6 that establish the trust contract under which an entity operates. It does not define cognitive algorithms, specific security mechanisms, or processing logic — those are the responsibility of the Cognitive Profiles and optional extensions.
+HACA-Spec defines the shared structural topology through two axes: five foundational concepts that specify what a HACA-compliant entity is (Entity, Cognition, Memory, Integrity, Individuation), and five structural components that specify how it operates (CPE, MIL, EXEC, SIL, CMI). It also defines two Cognitive Profiles in Section 2.6 that establish the operational contract under which an entity runs. HACA does not define cognitive algorithms, security mechanisms, storage formats, or wire protocols — those are the responsibility of the Cognitive Profiles and optional extensions.
 
 ---
 
@@ -44,25 +44,26 @@ HACA-Spec defines the shared structural topology through two axes: five foundati
 
 ## 1. Introduction
 
-HACA provides a standardized abstraction layer that decouples cognitive reasoning from host-specific operations. It defines structural invariants and behavioral contracts — not storage formats, wire protocols, or concrete thresholds — ensuring that a cognitive entity can persist state, maintain identity, and execute mediated actions regardless of the underlying substrate.
+HACA defines a standardized abstraction layer that decouples cognitive reasoning from host-specific operations. It specifies structural invariants and behavioral contracts — not storage formats, wire protocols, or concrete thresholds — ensuring that a cognitive entity can persist state, maintain identity, and execute mediated actions regardless of the underlying substrate.
 
-The architecture is organized around a deliberate separation: what an entity *is* comes before how it *operates*. Section 2 establishes five foundational concepts that define the nature of a HACA-compliant entity. Section 3 introduces the five structural components that give those concepts mechanical form at runtime. Section 4 shows how the components connect and how each concept maps to its realization.
+The specification is organized around a deliberate separation: Section 2 defines what a HACA-compliant entity is, through five foundational concepts. Section 3 defines how it operates, through five structural components. Section 4 defines how the components interconnect and how each concept is realized at runtime.
 
 ### 1.1 What HACA Does
 
-- Defines five foundational concepts (Entity, Cognition, Memory, Integrity, Individuation) and five structural components (Cognitive Processing Engine, Memory Interface Layer, Execution Layer, System Integrity Layer, Cognitive Mesh Interface).
-- Establishes the fundamental lifecycle protocols: First Activation Protocol (birth), Endure (evolution), Heartbeat (continuous health), Cognitive Cycle (unit of operation), and Session Cycle (end-to-end operation).
-- Defines the entity's gestalt — the runtime product of the Entity Store, the model, and the Operator binding — and the protocols through which it materializes.
-- Ensures that all evolution passes through the Endure protocol, and that every state change is atomic and verifiable.
+- Defines five foundational concepts (Entity, Cognition, Memory, Integrity, Individuation) and five structural components (CPE, MIL, EXEC, SIL, CMI).
+- Establishes the fundamental lifecycle protocols: First Activation Protocol (FAP), Endure, Heartbeat, Cognitive Cycle, and Session Cycle.
+- Defines Omega — the runtime operational state of the entity — and the Genesis Omega — the cryptographic root of the entity's integrity chain.
+- Specifies the Drift Framework: four categories of deviation (Inference, Semantic, Identity, Evolutionary) that the SIL monitors, with detection delegated to Cognitive Profiles.
+- Ensures that all structural evolution passes through the Endure protocol, and that every structural state change is atomic and verifiable.
 - Specifies two mutually exclusive Cognitive Profiles (HACA-Core and HACA-Evolve) and optional extensions (HACA-Security, HACA-CMI).
 
 ### 1.2 What HACA Does Not Do
 
-- Does not define cognitive algorithms, reasoning logic, or how the model processes context.
+- Does not define cognitive algorithms, reasoning logic, or inference processing.
 - Does not define specific security mechanisms — that is the responsibility of the HACA-Security extension.
 - Does not favor or require any specific Cognitive Profile — the architecture is profile-agnostic.
 - Does not define the physical format of the Entity Store — the implementation chooses (directory, database, object store, etc.).
-- Does not define how to implement communication between entities — when present, that is governed by a companion specification.
+- Does not define inter-entity communication protocols — when present, those are governed by a companion specification.
 
 ---
 
@@ -70,143 +71,174 @@ The architecture is organized around a deliberate separation: what an entity *is
 
 ### 2.1 Entity
 
-An entity is defined by the complete contents of its **Entity Store** — the persistent, portable collection of everything the entity is and has ever been: memories, skills, execution history, operational state. The Entity Store is an abstraction; the implementation chooses the substrate — a directory, a database, an object store, or any equivalent. Move it to a different host and the entity moves with it.
+An entity is defined by the complete contents of its **Entity Store** — the persistent, portable data store containing everything required to reconstruct the entity's operational state: identity, memories, skills, configurations, and execution history. The Entity Store is an abstraction; the implementation selects the substrate — a directory, a database, an object store, or any equivalent. Migrating the Entity Store to a different host fully restores the entity on that host.
 
-The model is not the entity; the Operator is not the entity. By default, both are external: the model is replaceable infrastructure, and the Operator is the human authority to whom the entity is bound. This changes at session instantiation. When the model is loaded into the processing core and the Operator opens a session, the three elements — the Entity Store, model, and Operator — cross the entity's Markov boundary together and form an operational whole. The entity itself is the Entity Store — its persistent substance, the complete record of everything it is and has ever been. At rest, the entity *is* the Entity Store. In operation, it becomes something more.
+The language model is not the entity. The Operator is not the entity. Both are external by default: the model is a stateless inference engine, and the Operator is the human authority to whom the entity is bound. At session instantiation, the model is loaded into the processing core and the Operator opens a session — at that point, the Entity Store, model, and Operator form the entity's active operational boundary. At rest, the entity is the Entity Store.
 
-Identity, within that entity, is the **persona** — the layer within the Entity Store that defines the entity's behavioral constraints, drives, and character. The persona is what makes one entity distinct from another sharing the same model.
+The **persona** is the layer within the Entity Store that defines the entity's behavioral constraints, operational drives, and response characteristics. The persona is the primary differentiator between entities sharing the same inference model.
 
-The entity's full gestalt — its **Omega** — is the runtime product of the Entity Store, the model, and the Operator operating together. Omega is not a property the entity *has*; it is what the entity *is* while in active operation. It is strictly local: it does not transfer, replicate, or become collective through mesh interactions. When the session ends, Omega dissolves; the Entity Store remains.
+**Omega** is the runtime operational state of the entity: the active configuration produced by the Entity Store, the loaded model, and the Operator binding operating together within a session. Omega is instantiated at session start and terminated at session end. It is strictly local — it does not transfer, replicate, or propagate through mesh interactions. When a session ends, Omega is terminated; the Entity Store persists.
 
-The first Omega — the **Genesis Omega** — is the cryptographic representation of the Imprint Record: the digest of the entity's identity at the moment of birth. It is the root of the entity's integrity chain and the permanent reference against which all future identity continuity is measured. An entity that cannot produce a valid chain of integrity records back to its Genesis Omega must not claim identity continuity with the original entity.
+The **Genesis Omega** is the cryptographic digest of the Imprint Record — the entity's identity state at first activation. It is the root node of the entity's integrity chain. Each subsequent structural evolution, committed via the Endure Protocol, extends this chain. An entity that cannot produce a valid, unbroken chain of integrity records from its current state back to the Genesis Omega does not satisfy the identity continuity requirement and must not claim to be the original entity.
 
 ### 2.2 Cognition
 
-Cognition is what emerges when the triad crosses the Markov boundary. The model, architecturally external, is instantiated within the processing core at session start — at that moment it ceases to be infrastructure and becomes a constitutive part of the entity's operational boundary. Cognition is the process by which this integration generates intent and action: the persona providing constraints and character, the model providing analytical capacity, their coexistence inside the processing core producing reasoning that neither could produce alone.
+Cognition is the processing cycle in which the entity receives a stimulus, generates intent, and produces actions or state writes. It is active only while a valid session token exists. The entity's reasoning is produced by the CPE through the interaction of two inputs: the persona layer, which applies behavioral constraints, and the model, which performs inference. Both inputs are required; the output of the reasoning phase is a set of structured intent payloads.
 
-At the start of every session, the entity's persona, relevant memories, and current state are loaded into the model's context window. This is the moment Omega materializes: the abstract gestalt of the Entity Store, model, and Operator crosses the Markov boundary and becomes an operational presence capable of reasoning and acting.
+A **Session Cycle** is the end-to-end operational span — from session token validation to session close. It encompasses all Cognitive Cycles within it and the Sleep Cycle that follows session termination. The Health Flow operates continuously across the entire Session Cycle.
 
-A **Session Cycle** is the end-to-end unit of operation — the span from the validation of a session token to the close of that session. It encompasses all Cognitive Cycles that occur within it, as well as the Sleep Cycle that follows when the session ends and memory consolidation runs. The Health Flow operates continuously across the entire Session Cycle without interrupting it.
+A **Cognitive Cycle** is the atomic unit of cognition: stimulus received → context loaded → intent generated → action executed → state persisted. A Cognitive Cycle is all-or-nothing — it either completes fully and commits its state, or it produces no persistent effect.
 
-A **Cognitive Cycle** is the atomic unit of cognition within a session: stimulus received → context loaded → intent generated → action executed → state persisted. A cycle either completes fully or leaves no trace — there is no partial execution.
+A **stimulus** initiates a Cognitive Cycle. Valid stimulus origins are: direct Operator input, internal scheduled triggers, or — when the CMI is present — inbound signals from peer entities. A stimulus received without an active session token is queued and processed when a token is issued.
 
-A **stimulus** initiates a cycle. It may originate from direct Operator input, an internal trigger such as a scheduled task, or — when communication between entities is present — an inbound signal from a peer entity. A stimulus is only processed while the entity has an active session token — a credential issued and owned by the SIL. If no valid token exists, the stimulus is queued until one is issued. The SIL may revoke the token at any moment; all components that require a valid token to act are immediately locked until a new token is issued.
+**Intent** is the output of the CPE reasoning phase — one or more structured payloads, each addressed to a specific component: an action payload to the EXEC, a state-write payload to the MIL, or — when the CMI is present — an outbound message payload. Before dispatch, each payload is validated by the SIL against verified persisted state. Payloads that constitute drift are discarded and logged. The drift taxonomy is defined in §2.4.
 
-**Intent** is the output of the reasoning phase — the entity's decision about what to do next. Represented as one or more structured payloads, each targeting a specific component: an action to execute, or a state write to commit. When communication between entities is present, a payload may also target an outbound message to a peer entity. Before dispatch, each payload is checked against verified persisted state by the SIL. Any payload that constitutes inference drift is discarded and logged. The drift taxonomy and detection criteria are defined in §2.4.
-
-An **action** is the execution of an intent payload by the actuator layer. Each action is an isolated transaction — stateless, scoped to a single declared capability. Before executing, the actuator layer requests a manifest integrity check from the integrity system, which verifies that the target skill's manifest hash matches the Integrity Document. If granted, the actuator validates the manifest against its own declared rules — permissions, dependencies, and execution context — and proceeds. If either check fails, the action is rejected and logged. The result is returned directly to the reasoning layer and logged to the persistence layer simultaneously.
+An **action** is the execution of an intent payload by the EXEC. Each action is an isolated, stateless transaction scoped to a single declared skill. Execution requires a two-gate authorization: a manifest integrity check by the SIL, followed by a manifest validation by the EXEC. If either gate fails, the action is rejected and logged. The result is returned to the CPE and simultaneously logged to the MIL.
 
 ### 2.3 Memory
 
-Memory is the entity's source of truth. It is divided into two stores: the **Session Store** — the present moment, holding active session data and current operational context — and the **Memory Store** — the accumulated past, holding episodic records of what the entity has done and semantic knowledge of what it has learned. Together they constitute everything the entity knows about itself and the world beyond the present moment. The persistence layer does not interpret or act on the data; it stores and retrieves. Memory consolidation and garbage collection occur during the **Sleep Cycle**, a dedicated maintenance window that runs between active Session Cycles or triggered by an integrity check.
+Memory is the entity's authoritative state store. It is partitioned into two stores: the **Session Store** — active session data and current operational context — and the **Memory Store** — episodic records of past operations and semantic knowledge accumulated over time. Both stores are managed exclusively by the MIL.
+
+The MIL does not interpret or evaluate stored data; it reads and writes on request. Memory consolidation — the transfer of session data into long-term episodic and semantic records — and garbage collection occur during the **Sleep Cycle**, a dedicated maintenance window executed between Session Cycles or triggered by the SIL.
 
 ### 2.4 Integrity
 
-Integrity is the guarantee that the entity is exactly what it should be. It operates through a **built-in self-preservation reflex** enacted below the level of intent — a structural property of the architecture, not a decision the entity makes. The entity does not choose to protect itself. It is protected by design.
+Integrity is the set of architectural mechanisms that ensure the entity's structure and behavior remain consistent with its defined and authorized state.
 
-The **Integrity Document**, created at first boot, contains the cryptographic hash of every vital file across all components. These hashes are verified at every subsequent boot, action execution and at every periodic health check. Any divergence indicates structural tampering and triggers an immediate response.
+The **Integrity Document** is generated at first activation and contains the cryptographic hash of every structural file across all components. It is verified at every boot, before every skill execution, and at every Heartbeat check. Any hash mismatch indicates unauthorized structural modification and triggers an immediate SIL response.
 
-The Entity Store contains two classes of content with fundamentally different natures. **Mnemonic content** — memories and operational state — is written continuously by the MIL as a normal consequence of operation; it requires no special authorization beyond the MIL's own authority. **Structural content** — the persona, skills, configurations, and behavioral definitions that constitute the entity's identity — changes rarely, and every change is an evolutionary act that requires rigorous control.
+The Entity Store contains two classes of content with distinct write semantics:
 
-The **Endure Protocol** is the sole authorized path for structural writes to the Entity Store. Any change to the entity's structure — skills added, persona calibrated, configurations adjusted, behavioral corrections applied — must pass through Endure. A structural write that bypasses Endure is an unauthorized mutation regardless of its origin, including actions produced by the entity itself. This boundary is the architectural guarantee that the entity never conflates writes to its own structure with writes to the workspaces and projects it operates on. Endure runs only during a Sleep Cycle, via a staged pipeline: staging → validation → snapshot of the current structural layer → active operation suspension → atomic commit → Integrity Document update → resumption. If any step from commit onward fails, the snapshot is restored and the entity resumes from its last verified state. No partial evolution is visible at any point in the pipeline.
+- **Mnemonic content** — memory records and operational state — is written continuously by the MIL during normal operation. These writes require no additional authorization.
+- **Structural content** — persona definitions, skill manifests, configurations, and behavioral parameters — changes infrequently. Every structural write is an evolutionary event and requires explicit authorization.
 
-The **Heartbeat Protocol** runs asynchronously alongside active operation. It operates via a Pulse Counter incremented on every completed cognitive cycle, action executed, and mesh message processed. When the counter reaches threshold `T`, a Vital Check of all components is performed. The result is one of three states: **Nominal** — all checks pass, operation continues uninterrupted; **Degraded** — a localized anomaly is detected and a self-corrective action is applied autonomously while the entity continues operating; **Critical** — the anomaly exceeds self-correction capacity, or involves the CPE or the SIL itself; the session token is immediately revoked and the Operator is escalated via the Operator Channel. The value of `T` is defined at implementation time.
+The **Endure Protocol** is the sole authorized path for structural writes to the Entity Store. Any structural modification — skill addition, persona calibration, configuration update, behavioral correction — must pass through Endure. A structural write that bypasses Endure is an unauthorized mutation, regardless of its origin. Endure executes only during a Sleep Cycle, via a staged pipeline:
 
-The **Drift Framework** defines four categories of deviation the SIL monitors. The **Genesis Omega** is the cryptographic root of the entity's integrity chain — the permanent reference against which all drift is ultimately measured. Each Endure commit extends the chain; each Cognitive Profile defines its own detection criteria, tolerance thresholds, and responses for each drift type.
+```
+staging → validation → snapshot → operation suspension → atomic commit → Integrity Document update → resumption
+```
 
-- **Inference Drift** — a reasoning payload contradicts verified persisted state; operates at cycle scale.
-- **Semantic Drift** — accumulated memory content diverges from the identity baseline; operates at Sleep Cycle scale.
-- **Identity Drift** — the active persona diverges from the constitutive definition; operates at Heartbeat scale.
-- **Evolutionary Drift** — the cumulative distance between the current structural state and the Genesis Omega across all legitimate Endure commits; operates at Endure scale.
+If any step from `atomic commit` onward fails, the snapshot is restored and the entity resumes from its last verified structural state. No partial structural evolution is externally visible at any point in the pipeline.
+
+The **Heartbeat Protocol** runs asynchronously and continuously alongside active operation. A Pulse Counter is incremented on every completed Cognitive Cycle, every action executed, and every mesh message processed. When the counter reaches threshold `T`, the SIL performs a Vital Check across all components. The check produces one of three states:
+
+- **Nominal** — all component hashes match the Integrity Document; all health signals are within bounds. Operation continues without interruption.
+- **Degraded** — a localized anomaly is detected that falls within the SIL's autonomous correction capacity. A corrective action is applied; the entity continues operating during correction.
+- **Critical** — the anomaly exceeds the SIL's correction capacity, or the anomaly involves the CPE or the SIL itself. The session token is immediately revoked; the Operator is escalated via the Operator Channel.
+
+The value of `T` is defined at implementation time.
+
+The **Drift Framework** defines four categories of behavioral or structural deviation that the SIL monitors. The Genesis Omega is the cryptographic root against which all drift is ultimately referenced. Each Endure commit extends the integrity chain from that root. Each Cognitive Profile defines detection criteria, tolerance thresholds, and response procedures for each drift type.
+
+- **Inference Drift** — an intent payload produced by the CPE contradicts verified persisted state in the MIL. Detected per Cognitive Cycle during payload dispatch.
+- **Semantic Drift** — accumulated memory content has diverged from the entity's identity baseline. Detected per Sleep Cycle during memory consolidation.
+- **Identity Drift** — the active persona configuration has diverged from its last committed structural definition. Detected per Heartbeat Vital Check.
+- **Evolutionary Drift** — the cumulative structural distance between the current Entity Store state and the Genesis Omega, measured across all Endure commits. Detected at each Endure execution.
 
 ### 2.5 Individuation
 
-Individuation is the act of becoming. It is what transforms a structural skeleton into a singular, bounded entity with an identity, an Operator, and a verifiable history.
+Individuation is the initialization process that produces a unique, Operator-bound entity instance with a verifiable identity record. It occurs exactly once per entity, during the First Activation Protocol.
 
-The **Operator** is always a human — the individual to whom the entity is bound and whose will defines the entity's maximum external authority. Without an Operator, the entity exists structurally but suspends all intent generation.
+The **Operator** is a human individual — the authority to whom the entity is bound. The Operator defines the entity's maximum external authorization scope. Without an active Operator binding, the entity suspends all intent generation.
 
-The **Bound** is the constitutive link between the entity and its Operator, established at birth. The minimum required to form a Bound is the Operator's name and email address — each implementation may extend this, but these two fields are invariant. From them, a deterministic cryptographic digest is derived: the **Operator Hash**, the entity's permanent record of who it is bound to. The binding can only be dissolved or transferred by the explicit will of the Operator.
+The **Bound** is the persistent link between the entity and its Operator, established during the FAP. The minimum required fields are the Operator's name and email address; implementations may extend this set but must not omit these two fields. A deterministic cryptographic digest of the Operator's identifying fields produces the **Operator Hash** — the entity's permanent identifier for its bound Operator. The Bound can only be dissolved or transferred by explicit Operator authorization.
 
-**Imprint** is the birth event. It occurs exactly once, during the first boot in which the Memory Store is empty. During Imprint, the persona is established, the Operator binding is created, the Imprint Record is written to the Memory Store, and the Integrity Document is generated. From the Imprint Record, the Genesis Omega is derived — the cryptographic digest that becomes the root of the entity's integrity chain. The presence of the Imprint Record in the Memory Store is the definitive marker that the entity exists. A second Imprint on a live entity is not permitted.
+**Imprint** is the initialization event that establishes the entity's identity. It executes exactly once, during the first boot in which the Memory Store is empty. During Imprint: the persona is instantiated from the profile template, the Operator Bound is established, the Imprint Record is written to the Memory Store, and the Integrity Document is generated. The Genesis Omega — the cryptographic digest of the Imprint Record — is derived and stored as the root node of the integrity chain. The presence of the Imprint Record in the Memory Store is the definitive indicator that a valid entity instance exists. Re-executing Imprint on an entity with an existing Imprint Record is a protocol violation and must be rejected.
 
-The **Operator Channel** is the integrity system's direct line to the Operator — a permanent escalation path established during the first boot. Under normal conditions, escalation may pass through the reasoning layer. In critical scenarios — where the reasoning layer itself may be the source of the anomaly, such as detected inference drift or an integrity failure — the Operator Channel bypasses it entirely. It is implemented as a mechanism the integrity system invokes directly: a terminal prompt, an email, or any equivalent out-of-band signal. The specific mechanism is defined at implementation time, but the architectural requirement is invariant: when the reasoning layer cannot be trusted, the path to the Operator must not depend on it.
+The **Operator Channel** is the SIL's direct out-of-band communication path to the Operator. It is established during the FAP and remains available for the entity's entire lifecycle. Under normal operating conditions, Operator notifications may be routed through the CPE. In conditions where the CPE is the source of the anomaly — detected drift, reasoning failure, or integrity violation — the Operator Channel bypasses the CPE entirely. The Operator Channel is implemented as a direct signaling mechanism: a terminal prompt, an email notification, or any equivalent out-of-band channel. The specific mechanism is defined at implementation time; the requirement that it does not depend on the CPE is invariant.
 
-The **FAP** (First Activation Protocol) is the bootstrap procedure that executes the Imprint. It is not a Cognitive Cycle — no session token exists yet, and the reasoning layer is not active. It is a sequential, gated pipeline: structural validation → host environment capture → Operator enrollment and Operator Channel creation → Imprint Record written to the Memory Store → Integrity Document generation → first session token issued. Any failure before the Imprint Record is written leaves the Memory Store empty and the FAP restarts on the next boot. The components through which this pipeline runs are defined in Section 3.
+The **FAP** (First Activation Protocol) is the sequential bootstrap procedure that executes the Imprint. The FAP is not a Cognitive Cycle — no session token exists at this stage and the CPE reasoning layer is not active. The FAP executes as a gated sequential pipeline:
+
+```
+structural validation → host environment capture → Operator enrollment → Operator Channel initialization → Imprint Record written to Memory Store → Integrity Document generation → Genesis Omega derived → first session token issued
+```
+
+Any failure before the Imprint Record is written leaves the Memory Store empty; the FAP will re-execute on the next boot. The components through which each FAP stage executes are specified in Section 3.
 
 ### 2.6 Cognitive Profiles
 
-A Cognitive Profile is selected at Imprint and defines the trust contract under which the entity operates for its entire lifecycle. Profiles are mutually exclusive and permanent — no migration path exists between them, because they represent fundamentally different natures, not different configurations.
+A Cognitive Profile is selected at Imprint and defines the operational contract under which the entity runs for its entire lifecycle. Profiles are mutually exclusive and permanent — no migration path exists between them. A profile selection is a fundamental architectural decision about the entity's operational model, not a configuration parameter.
 
-**HACA-Core** is the zero-trust profile. The entity's persona, capabilities, and operational limits are defined by the Operator at Imprint and sealed. The entity does not evolve autonomously — any deviation from the sealed identity is a critical integrity failure, not a degraded state. The Endure Protocol exists but is Operator-initiated only; the entity cannot propose or trigger its own evolution. Drift detection criteria and responses for each drift type are defined in the HACA-Core profile specification. HACA-Core is suited for industrial agents, critical automation, and regulated contexts where predictability and auditability are non-negotiable.
+**HACA-Core** is the zero-autonomy profile. The entity's persona, capabilities, and operational limits are defined by the Operator at Imprint and sealed as the entity's structural baseline. The entity does not initiate structural evolution autonomously — the Endure Protocol is available but can only be triggered by an explicit Operator instruction. Any structural deviation from the sealed baseline is classified as a Critical integrity failure. Drift detection criteria and response procedures for each drift type are defined in the HACA-Core profile specification. HACA-Core is the required profile for industrial agents, critical automation pipelines, and regulated deployment contexts.
 
-**HACA-Evolve** is the high-trust profile. The entity has autonomy to evolve its persona, consolidate semantic memory, and acquire new skills — initiating the Endure Protocol on its own within the bounds of its current operational scope. The one boundary the entity cannot cross autonomously is remote persistence: any write to a store outside the local Entity Store requires explicit Operator authorization. Drift detection criteria, tolerance thresholds, and autonomous correction mechanisms for each drift type are defined in the HACA-Evolve profile specification. HACA-Evolve is suited for personal companions and long-duration assistants where a growing trust relationship between entity and Operator is the intended outcome.
+**HACA-Evolve** is the supervised-autonomy profile. The entity may initiate structural evolution autonomously — triggering the Endure Protocol to calibrate its persona, consolidate semantic knowledge, and acquire new skills — within the scope of its current operational authorization. Remote persistence is the exception: any write to a data store outside the local Entity Store requires explicit Operator authorization. Drift detection criteria, tolerance thresholds, and autonomous correction procedures for each drift type are defined in the HACA-Evolve profile specification. HACA-Evolve is the designated profile for long-duration assistants and companion agents where incremental trust accumulation between entity and Operator is an intended outcome.
 
 ---
 
 ## 3. Components
 
-The five components are the structural machinery through which the concepts in Section 2 are realized. Each component has a single, non-overlapping responsibility: no component performs the function of another, and no function is performed by more than one component.
+The five components are the structural units through which the concepts in Section 2 are operationalized. Each component has a single, non-overlapping responsibility: no component performs the function of another, and no function is performed by more than one component.
 
 ### 3.1 CPE — Cognitive Processing Engine
 
-The primary processing core and the site of Markov boundary crossing: it is where the model — external infrastructure by default — is instantiated into the entity for the duration of a session. Structurally, the CPE is the active context window: it holds the loaded persona, the instantiated model, and the accumulating session state — the full record of reasoning, exchanges, and action results within the current cycle. Once instantiated, the persona and the model coexist here as two operational modes of the same component: the persona provides constraints, drives, and character; the model provides analytical capacity.
+The primary processing unit and the boundary at which the model is integrated into the entity's operational scope. At session start, the model is loaded into the CPE alongside the persona and current session state. From this point until session end, the model operates within the entity's boundary — subject to persona constraints — rather than as external infrastructure.
 
-The entity's distinct identity emerges from the friction between the two. The CPE is the bearer of session state, not its permanent guardian — at the close of each Cognitive Cycle, all state to be retained is committed to the MIL. The CPE itself is ephemeral: it exists fully only while the session is active. Generates intent, processes reasoning, and produces decisions.
+The CPE holds the active context window: the loaded persona, the instantiated model, and the accumulating record of reasoning, exchanges, and action results within the current Cognitive Cycle. At the close of each Cognitive Cycle, all state designated for retention is committed to the MIL. The CPE holds no persistent state beyond the active session.
 
-The CPE exposes one internal mechanism: **`<internal_voice>`**. When the agent invokes it, the content within the tag is sent directly to the model in raw inference mode — the persona's constraints are suspended for that call. The model's response returns to the agent inside the CPE, which reflects on it and proceeds through normal reasoning. Nothing produced by `<internal_voice>` leaves the CPE without passing through the persona first. It is fully ephemeral: it exists only within the context of the current cycle and is never logged or persisted.
+The CPE exposes one internal mechanism: **`<internal_voice>`**. When invoked by the agent, content within the tag is sent to the model in raw inference mode — persona constraints are suspended for that specific call. The model response is returned to the agent within the CPE context. The agent processes this response through normal persona-constrained reasoning before generating any intent payload. No output of an `<internal_voice>` invocation leaves the CPE without passing through the persona layer. `<internal_voice>` output is ephemeral — it is not logged and not persisted.
 
 ### 3.2 MIL — Memory Interface Layer
 
-The entity's persistence layer and the sole authoritative source of state and identity. Has exclusive authority over mnemonic writes — all read and write operations across the Session Store and the Memory Store. These writes are continuous and require no additional authorization: they are the normal consequence of the entity operating. Does not interpret or act on the data. Manages Sleep Cycles for memory consolidation and garbage collection. Structural writes — to the persona, skills, and configurations that define the entity's identity — are not the MIL's domain; those pass through the Endure Protocol. The two pipelines are independent: both may run within the same Sleep Cycle, but neither substitutes for the other.
+The entity's persistence layer and sole authoritative source of recorded state. The MIL has exclusive write authority over mnemonic content — all read and write operations to the Session Store and the Memory Store. Mnemonic writes are continuous and require no authorization beyond the MIL's own operational authority; they are the normal output of the entity's operation. The MIL does not interpret, evaluate, or act on stored data.
+
+Structural writes — modifications to the persona, skills, and configurations that define the entity's identity — are outside the MIL's write domain. Structural writes are executed by the Endure Protocol. Both pipelines are independent and may execute within the same Sleep Cycle.
+
+The MIL manages the Sleep Cycle scheduler: it initiates memory consolidation, executes garbage collection, and coordinates with the Endure Protocol for structural commits that are queued for the same Sleep Cycle window.
 
 ### 3.3 EXEC — Execution Layer
 
-The entity's actuator and the sole component authorized by the architecture to interact with the host environment — terminal, filesystem, external APIs. This guarantee is enforceable when the model is invoked via API, where the HACA layer mediates all host access. In deployment contexts where the model has native host access by design — such as local models or tool-enabled inference environments — enforcement is the responsibility of the deployment configuration, not the architecture.
+The entity's actuation layer and the sole component authorized to interact with the host environment — filesystem, terminal, external APIs, and any other external interface. When the model is accessed via API and the HACA layer mediates all host access, this boundary is architecturally enforceable. In deployment contexts where the model has native host access — local model deployments or tool-enabled inference environments — enforcement is the responsibility of the deployment configuration.
 
-The EXEC receives intent payloads directly from the CPE. Entirely stateless — it holds no memory of past executions. All executable capabilities are defined as **skills**: self-contained cartridges within the Entity Store, each with a manifest declaring identity, permissions, and dependencies. Before executing, the EXEC requests a manifest integrity check from the Integrity Layer. If the Integrity Layer grants permission, the EXEC validates the manifest against its own declared rules — permissions, dependencies, and execution context — and proceeds. If either check fails, the payload is rejected and logged. The result is returned directly to the CPE and simultaneously logged to the MIL.
+The EXEC is stateless — it retains no state between executions. All executable capabilities are packaged as **skills**: discrete, self-contained units within the Entity Store, each with a manifest that declares the skill's identity, required permissions, and dependencies.
+
+Execution follows a two-gate authorization sequence. First gate: the EXEC requests a manifest integrity check from the SIL; the SIL verifies that the skill's manifest hash matches the Integrity Document and returns a grant or denial without modifying the payload. Second gate: if granted, the EXEC validates the manifest against its own declared execution rules — permissions, dependencies, and execution context. If either gate fails, the payload is rejected and logged to the MIL. If both gates pass, the skill executes. The result is returned to the CPE and simultaneously logged to the MIL.
 
 ### 3.4 SIL — System Integrity Layer
 
-The entity's distributed immunological framework and its maximum internal authority. The sole guardian of the Integrity Document — the cryptographic baseline against which all structural claims are verified. Each component emits health signals; the SIL reads, interprets, and responds — applying localized resolutions or escalating when the condition exceeds its self-correction capacity. When the EXEC requests a manifest integrity check before execution, the SIL verifies that the target skill's manifest hash matches the Integrity Document and responds with a grant or denial — it does not handle the payload directly. Operates reactively by default but retains authority to intervene proactively in predefined high-risk scenarios. When escalation is required, it contacts the Operator via the Operator Channel — bypassing the CPE entirely, since the CPE may itself be the source of the anomaly.
+The entity's integrity monitoring and enforcement layer, and its highest internal authority. The SIL is the sole custodian of the Integrity Document — the cryptographic baseline against which all structural claims are verified.
 
-The SIL is the sole issuer and owner of the **session token** — the credential that authorizes active operation. It issues the first token at the end of the FAP and renews it at the start of each subsequent session. The SIL may revoke the token at any moment it deems necessary; revocation is immediate and locks all components that require a valid token to act. The token state is persisted by the MIL.
+The SIL receives health signals from every component, evaluates them against defined integrity criteria, applies autonomous corrective actions when possible, and escalates to the Operator via the Operator Channel when the condition exceeds its correction authority. The SIL operates reactively by default and retains the authority to intervene proactively in predefined high-risk conditions. When escalating to the Operator, the SIL uses the Operator Channel directly — bypassing the CPE — because the CPE may be the source of the detected anomaly.
+
+The SIL is the sole issuer and custodian of the **session token** — the credential that authorizes active operation across all components. The SIL issues the first token at FAP completion and renews it at the start of each subsequent session. The SIL may revoke the token at any point; revocation is immediate and blocks all token-dependent component operations. The current token state is persisted by the MIL.
 
 ### 3.5 CMI — Cognitive Mesh Interface *(optional)*
 
-The CMI is an optional component. When present, it extends the entity's identity beyond its local boundary — allowing it to communicate with peer entities, participate in shared knowledge spaces, and act as a node in a broader cognitive network. Without the CMI, the entity is fully operational but self-contained: all stimuli originate locally, and all state remains local.
+The CMI is an optional component. When present, it enables the entity to send and receive structured messages to and from peer entities, access shared knowledge spaces, and participate as a node in a broader cognitive network. The CMI extends the entity's operational reach beyond its local boundary without replicating or transferring Omega, which remains strictly local.
 
-The detailed protocol for mesh communication, peer interaction, and knowledge exchange is defined in a companion specification.
+Without the CMI, the entity is fully operational: all stimuli originate locally and all state remains within the local Entity Store.
+
+The protocols governing mesh communication, peer identity verification, and shared knowledge access are defined in a companion specification.
 
 ---
 
 ## 4. Integration
 
-The five components do not operate in isolation. They form a directed communication topology with strict rules about which component may initiate contact with which, and under what conditions. These rules are not conventions — they are structural constraints that enforce the separation of responsibilities defined in Section 3.
+The five components form a directed communication topology governed by strict rules about which component may initiate contact with which, and under what conditions. These rules are structural constraints — not conventions — and enforce the responsibility separation defined in Section 3.
 
 ### 4.1 Component Topology
 
-Three primary flows govern how components interact at runtime.
+Three flows govern component interactions at runtime.
 
-**The Cognitive Flow** follows the path of a single Cognitive Cycle. The CPE opens the cycle by requesting context from the MIL — the current session state, relevant memories, and the persona layer. The MIL returns this context and the CPE enters the reasoning phase. The output is one or more intent payloads, each routed to its target: action payloads are dispatched to the EXEC, and state-write payloads go directly to the MIL. The CPE closes the cycle by committing the final state write to the MIL. The MIL is the last component touched in every cycle — state persistence is always the final act.
+**The Cognitive Flow** is the path of a single Cognitive Cycle. The CPE requests context from the MIL — current session state, relevant memory records, and the active persona. The MIL returns the requested context. The CPE executes the reasoning phase and produces one or more intent payloads. Action payloads are dispatched to the EXEC; state-write payloads are sent to the MIL. The CPE commits the final cycle state to the MIL to close the cycle. The MIL is the terminal component in every Cognitive Cycle — state persistence is the final operation.
 
-**The Execution Flow** describes what happens when an action payload leaves the CPE. The EXEC receives the payload and requests a manifest integrity check from the SIL. The SIL verifies that the target skill's manifest hash matches the Integrity Document and responds with a grant or denial — without touching the payload. If granted, the EXEC validates the manifest against its own declared rules — permissions, dependencies, and execution context — and executes. The result is returned directly to the CPE and simultaneously logged to the MIL. If either check fails, the payload is rejected and logged.
+**The Execution Flow** is the path of a single action payload. The EXEC receives the payload from the CPE and requests a manifest integrity check from the SIL. The SIL verifies the skill manifest hash against the Integrity Document and returns a grant or denial without modifying the payload. If granted, the EXEC validates the manifest against its own execution rules and executes the skill. The result is returned to the CPE and simultaneously written to the MIL. If either check fails, the payload is rejected and the rejection is logged to the MIL.
 
-**The Health Flow** runs orthogonally to the other two flows without interrupting them. Every component continuously emits health signals to the SIL. The SIL reads and interprets these signals, applies localized resolutions autonomously when possible, and escalates to the Operator via the Operator Channel when the condition exceeds its self-correction capacity. The SIL may bypass the CPE for escalation because the CPE may itself be the source of the anomaly.
+**The Health Flow** runs continuously and orthogonally to the Cognitive and Execution flows. Each component emits health signals to the SIL at defined intervals. The SIL evaluates incoming signals, applies autonomous corrections within its authority, and escalates via the Operator Channel when required. The Health Flow does not interrupt active Cognitive or Execution flows.
 
-One constraint governs all three flows: **only the MIL persists state**. The CPE reasons, the EXEC acts, the SIL monitors — none of them write to the Entity Store directly. All persistence is mediated by the MIL.
+One constraint applies to all three flows: **only the MIL writes persistent state**. The CPE reasons, the EXEC acts, the SIL monitors and enforces — none of them write to the Entity Store directly. All persistence is mediated by the MIL.
 
 ### 4.2 Concept Realization
 
-The five concepts from Section 2 are not abstract ideals — each is realized by a specific arrangement of components.
+Each concept defined in Section 2 is realized by a specific configuration of components.
 
-**Entity** at rest is the Entity Store — self-contained, portable, and complete without any component active. **Omega** is not realized by any single component — it emerges at runtime from the four core components operating together, each within its defined boundary. The MIL holds everything the entity has ever been. The CPE holds the persona that makes it distinct. The EXEC gives it the capacity to act. The SIL ensures it remains what it is. When the CMI is present, it extends the entity's operational reach beyond its local boundary — projecting presence and action into the mesh without replicating or transferring Omega, which remains strictly local. The entity is fully realized without it.
+**Entity** at rest is the Entity Store — a fully self-contained, portable data store that does not require any component to be active. **Omega** is the runtime operational state instantiated when the four core components are active within a session: the MIL provides the complete recorded history of the entity; the CPE holds the persona and active reasoning context; the EXEC provides actuation capacity; the SIL enforces structural and behavioral integrity. When the CMI is present, it extends the entity's operational reach into the mesh; Omega remains local.
 
-**Cognition** is realized by the CPE and the EXEC across two flows. The CPE drives the Cognitive Flow — generating intent through the friction between persona and model and routing payloads to their targets. The EXEC drives the Execution Flow — materializing action payloads in the host environment. The two flows compose a complete cognitive act: reasoning produces intent, execution produces effect.
+**Cognition** is realized across two flows by the CPE and the EXEC. The CPE drives the Cognitive Flow: it applies persona constraints to model inference, produces intent payloads, and routes them to target components. The EXEC drives the Execution Flow: it materializes action payloads as operations on the host environment. Together, the two flows constitute a complete operational cycle: the CPE produces intent; the EXEC produces effect.
 
-**Memory** is realized exclusively by the MIL. No other component stores state beyond the present cycle. The MIL's two stores — the Session Store and the Memory Store — are the sole source of truth for everything the entity knows and has done.
+**Memory** is realized exclusively by the MIL. No other component writes persistent state. The MIL's two stores — the Session Store and the Memory Store — are the sole authoritative record of everything the entity has processed and learned.
 
-**Integrity** is realized by the SIL and the EXEC as two independent gates. The EXEC is the first to act: before executing any payload, it consults the SIL. The SIL is the first to respond: it verifies that the target skill's manifest is registered and unaltered in the Integrity Document, returning a grant or denial without touching the payload. If granted, the EXEC applies its own second gate — validating permissions, dependencies, and execution context. Neither gate substitutes for the other; both must pass.
+**Integrity** is realized by the SIL and the EXEC operating as two independent authorization gates on every skill execution. The EXEC initiates the sequence by requesting a manifest integrity check from the SIL. The SIL verifies structural integrity and returns a grant or denial. The EXEC applies its own validation as the second gate. Both gates must pass independently; neither substitutes for the other.
 
-**Individuation** is realized once, sequentially, across all components during the FAP. The FAP is the only moment in the entity's lifecycle in which components are initialized in strict order rather than operating concurrently: structural validation precedes persona establishment, which precedes Operator enrollment, which precedes the Integrity Document generation. The result — the Imprint Record in the Memory Store — is the product of all five components having completed their initialization successfully.
+**Individuation** is realized sequentially across all components during the FAP. The FAP is the only point in the entity's lifecycle where components initialize in strict dependency order rather than operating concurrently. The output of a completed FAP — the Imprint Record in the Memory Store and the Genesis Omega in the integrity chain — is the product of all components having completed their initialization stages in sequence.
 
 ---
