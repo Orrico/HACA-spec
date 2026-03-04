@@ -12,7 +12,7 @@ date: 2026-03-02
 
 HACA (Host-Agnostic Cognitive Architecture) is a structural specification for cognitive entities built on top of language models. It defines the components, protocols, and invariants required for an entity to maintain persistent identity, verifiable state, and mediated execution across heterogeneous host environments.
 
-In HACA, the language model is infrastructure — a stateless inference engine external to the entity. The entity's persistent state resides entirely in the **Entity Store**, an implementation-agnostic data store owned and controlled by the Operator. Migrating the Entity Store to a different host, with any compatible inference engine, fully restores the entity to its last verified state.
+In HACA, the language model is infrastructure — a stateless inference engine external to the entity. The entity's persistent state resides entirely in the **Entity Store**, an implementation-agnostic data store owned and controlled by the human Operator. Migrating the Entity Store to a different host, with any compatible inference engine, fully restores the entity to its last verified state.
 
 HACA-Spec defines the shared structural topology through two axes: five foundational concepts that specify what a HACA-compliant entity is (Entity, Cognition, Memory, Integrity, Individuation), and five structural components that specify how it operates (Cognitive Processing Engine, Memory Interface Layer, Execution Layer, System Integrity Layer, Cognitive Mesh Interface). Section 2 defines the HACA Ecosystem — the two Cognitive Profiles and optional extensions that establish the operational contract and capability envelope under which an entity runs. HACA does not define cognitive algorithms, security mechanisms, storage formats, or wire protocols — those are the responsibility of the Cognitive Profiles and optional extensions.
 
@@ -38,10 +38,10 @@ HACA-Spec defines the shared structural topology through two axes: five foundati
    - 4.3 [EXEC — Execution Layer](#43-exec--execution-layer)
    - 4.4 [SIL — System Integrity Layer](#44-sil--system-integrity-layer)
    - 4.5 [CMI — Cognitive Mesh Interface](#45-cmi--cognitive-mesh-interface)
-   - 4.6 [Trust Model](#46-trust-model)
 5. [Integration](#5-integration)
    - 5.1 [Component Topology](#51-component-topology)
-   - 5.2 [Concept Realization](#52-concept-realization)
+   - 5.2 [Trust Model](#52-trust-model)
+   - 5.3 [Concept Realization](#53-concept-realization)
 6. [Lifecycle](#6-lifecycle)
    - 6.1 [Cold-Start and First Activation](#61-cold-start-and-first-activation)
    - 6.2 [Boot Sequence](#62-boot-sequence)
@@ -60,7 +60,7 @@ The specification is organized around a deliberate separation: Section 2 establi
 ### 1.1 What HACA Does
 
 - Defines five foundational concepts (Entity, Cognition, Memory, Integrity, Individuation) and five structural components (CPE, MIL, EXEC, SIL, CMI).
-- Establishes the fundamental lifecycle protocols: First Activation Protocol (FAP), Endure, Heartbeat, Cognitive Cycle, and Session Cycle.
+- Establishes the fundamental lifecycle protocols: First Activation, Endure, Heartbeat, Cognitive Cycle, and Session Cycle.
 - Defines Omega — the runtime operational state of the entity — and the Genesis Omega — the cryptographic root of the entity's integrity chain.
 - Specifies the Drift Framework: four categories of deviation (Inference, Semantic, Identity, Evolutionary) that the integrity layer monitors, with detection delegated to Cognitive Profiles.
 - Ensures that all structural evolution passes through the Endure protocol, and that every structural state change is atomic and verifiable.
@@ -114,13 +114,13 @@ The **persona** is the layer within the Entity Store that defines the entity's b
 
 **Omega** is the runtime operational state of the entity: the active configuration produced by the Entity Store, the loaded model, and the Operator binding operating together within a session. Omega is instantiated at session start and terminated at session end. It is strictly local — it does not transfer, replicate, or propagate beyond the active session boundary. When a session ends, Omega is terminated; the Entity Store persists.
 
-Omega is **runtime-immutable**: no external instruction — including an instruction from the Operator — may modify the active Omega directly during a session. Omega may only be altered by profile-defined internal processes validated by the SIL, and only between sessions. This invariant is the architectural enforcement of Imprint - birth registry: no runtime actor may overwrite the genesis anchor or any subsequent validated state.
+Omega is **runtime-immutable**: no external instruction — including an instruction from the Operator — may modify the active Omega directly during a session. Omega may only be altered by profile-defined internal processes validated by the integrity layer, and only between sessions. This invariant is the architectural enforcement of Imprint: no runtime actor may overwrite the genesis anchor or any subsequent validated state.
 
 The **Genesis Omega** is the cryptographic digest of the entity's verified identity state at first activation. It is the root node of the entity's integrity chain. Each subsequent authorized structural evolution extends this chain by one verified commit. An entity that cannot produce a valid, unbroken chain of integrity records from its current state back to the Genesis Omega does not satisfy the identity continuity requirement and must not claim to be the original entity.
 
 ### 3.2 Cognition
 
-Cognition is the processing cycle in which the entity receives a stimulus, generates intent, and produces actions or state writes. It is active only while a valid **session token** exists — the operational credential that authorizes active cognition, issued at the start of each session and revocable at any point. The entity's reasoning is produced by the cognite engine through the interaction of two inputs: the persona layer, which applies behavioral constraints, and the model, which performs inference. Both inputs are required; the output of the reasoning phase is a set of structured intent payloads.
+Cognition is the processing cycle in which the entity receives a stimulus, generates intent, and produces actions or state writes. It is active only while a valid **session token** exists — the operational credential that authorizes active cognition, issued at the start of each session and revocable at any point. The entity's reasoning is produced by the cognitive engine through the interaction of two inputs: the persona layer, which applies behavioral constraints, and the model, which performs inference. Both inputs are required; the output of the reasoning phase is a set of structured intent payloads.
 
 A **Session Cycle** is the end-to-end operational span — from session token validation to session close. It encompasses all Cognitive Cycles within it and a maintenance window — the Sleep Cycle — that follows session termination. Integrity monitoring operates continuously across the entire Session Cycle.
 
@@ -128,7 +128,7 @@ A **Cognitive Cycle** is the atomic unit of cognition: stimulus received → con
 
 A **stimulus** initiates a Cognitive Cycle. Valid stimulus origins are: direct Operator input, internal scheduled triggers, or — when the cognitive mesh is present — inbound signals from peer entities. A stimulus received without an active session token is queued and processed when a token is issued.
 
-**Intent** is the output of the CPE reasoning phase — one or more structured payloads, each addressed to a specific component: an action payload to the execution layer, a state-write payload to the memory layer, or — when the cognitive mesh interface is present — an outbound message payload. Before dispatch, each payload is validated by the integrity layer against verified persisted state. Payloads that constitute drift are discarded and logged. The drift taxonomy is defined in §3.4.
+**Intent** is the output of the cognitive engine's reasoning phase — one or more structured payloads, each addressed to a specific component: an action payload to the execution layer, a state-write payload to the memory layer, or — when the cognitive mesh interface is present — an outbound message payload. Before dispatch, each payload is validated by the integrity layer against verified persisted state. Payloads that constitute drift are discarded and logged. The drift taxonomy is defined in §3.4.
 
 An **action** is the execution of an intent payload by the execution layer. Each action is an isolated, stateless transaction scoped to a single declared skill. Execution requires a two-gate authorization: a manifest integrity check by the integrity layer, followed by a manifest validation by the execution layer. If either gate fails, the action is rejected and logged. The result is returned to the cognitive engine and simultaneously logged to the memory layer.
 
@@ -136,7 +136,7 @@ An **action** is the execution of an intent payload by the execution layer. Each
 
 Memory is the entity's authoritative state store. It is partitioned into two stores: the **Session Store** — active session data and current operational context — and the **Memory Store** — episodic records of past operations and semantic knowledge accumulated over time. Both stores are managed exclusively by the memory layer.
 
-The MIL does not interpret or evaluate stored data; it reads and writes on request. Memory consolidation — the transfer of session data into long-term episodic and semantic records — and garbage collection occur during the **Sleep Cycle**, a dedicated maintenance window executed between Session Cycles or triggered by an integrity event.
+The memory layer does not interpret or evaluate stored data; it reads and writes on request. Memory consolidation — the transfer of session data into long-term episodic and semantic records — and garbage collection occur during the **Sleep Cycle**, a dedicated maintenance window executed between Session Cycles or triggered by an integrity event.
 
 ### 3.4 Integrity
 
@@ -169,7 +169,7 @@ The value of `T` is defined at implementation time.
 
 The **Drift Framework** defines four categories of behavioral or structural deviation that the integrity layer monitors. The Genesis Omega is the cryptographic root against which all drift is ultimately referenced. Each Endure commit extends the integrity chain from that root. Detection criteria, tolerance thresholds, and response procedures for each drift type are defined by the active profile specification.
 
-- **Inference Drift** — an intent payload produced by the cognitive engine contradicts verified persisted state in the MIL. Detected per Cognitive Cycle during payload dispatch.
+- **Inference Drift** — an intent payload produced by the cognitive engine contradicts verified persisted state in the memory layer. Detected per Cognitive Cycle during payload dispatch.
 - **Semantic Drift** — accumulated memory content has diverged from the entity's identity baseline. Detected per Sleep Cycle during memory consolidation.
 - **Identity Drift** — the active persona configuration has diverged from its last committed structural definition. Detected per Heartbeat Vital Check.
 - **Evolutionary Drift** — the cumulative structural distance between the current Entity Store state and the Genesis Omega, measured across all Endure commits. Detected at each Endure execution.
