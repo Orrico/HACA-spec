@@ -188,7 +188,7 @@ If the active Operator Channel mechanism fails to deliver an escalation after N 
 The **FAP** (First Activation Protocol) is the sequential bootstrap procedure that executes the Imprint. The FAP is not a Cognitive Cycle — no session token exists at this stage and the cognitive engine reasoning layer is not active. The FAP executes as a gated sequential pipeline:
 
 ```
-structural validation → host environment capture → Operator enrollment → Operator Channel initialization → Imprint Record written to Memory Store → Integrity Document generation → Genesis Omega derived → first session token issued
+structural validation → host environment capture → Operator enrollment → Operator Channel initialization → Integrity Document generated → Imprint Record finalized (includes Integrity Document) and written to Memory Store → Genesis Omega derived → first session token issued
 ```
 
 The FAP is atomic: it either completes fully and writes a valid initial state to the Entity Store, or it leaves the Entity Store empty. Any failure before completion leaves the Memory Store empty and the FAP re-executes on the next boot. The Entity Store can never enter a partially-initialized state.
@@ -447,7 +447,7 @@ All terms defined in this specification, in alphabetical order.
 
 **Execution Flow** — the path of a single action payload through the two-gate authorization sequence: EXEC requests manifest integrity check from SIL, then validates its own execution rules, then executes the skill. The Skill Result is returned to the CPE and logged to the MIL.
 
-**FAP (First Activation Protocol)** — the one-time sequential bootstrap procedure that executes during cold-start: validates structure, captures the host environment, enrolls the Operator, initializes the Operator Channel, writes the Imprint Record, generates the Integrity Document, derives the Genesis Omega, and issues the first session token.
+**FAP (First Activation Protocol)** — the one-time sequential bootstrap procedure that executes during cold-start: validates structure, captures the host environment, enrolls the Operator, initializes the Operator Channel, generates the Integrity Document, finalizes and writes the Imprint Record (which includes the Integrity Document), derives the Genesis Omega, and issues the first session token.
 
 **Genesis Omega** — the cryptographic digest of the finalized Imprint Record — which includes the Integrity Document — derived at first activation. The root node of the entity's integrity chain, covering both the entity's identity baseline and its structural cryptographic baseline in a single verifiable root. The reference anchor against which all drift is ultimately measured.
 
