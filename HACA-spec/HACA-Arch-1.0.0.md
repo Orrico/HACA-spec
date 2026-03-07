@@ -145,7 +145,7 @@ The **Integrity Log** is the append-only record of integrity events maintained b
 The Entity Store contains three classes of content with distinct write semantics:
 
 - **Mnemonic content** — memory records and operational state — is written continuously by the memory layer during normal operation. These writes require no additional authorization; however, accumulated semantic knowledge may be proposed for promotion to the entity's structural baseline via an Evolution Proposal, which requires Operator authorization.
-- **Structural content** — persona definitions, skill manifests, configurations, and behavioral parameters — changes infrequently. Every structural write is an evolutionary event and requires explicit authorization.
+- **Structural content** — persona definitions, skill manifests, configurations, behavioral parameters, and Behavioral and Semantic Probes — changes infrequently. Every structural write is an evolutionary event and requires explicit authorization.
 - **Integrity content** — the Integrity Document and the Integrity Log — is written exclusively by the integrity layer. No other component has write authority over integrity content.
 
 The **Endure Protocol** is the sole authorized path for structural writes to the Entity Store. Any structural modification — skill addition, persona calibration, configuration update, behavioral correction — must pass through Endure. A structural write that bypasses Endure is an unauthorized mutation, regardless of its origin. Endure is owned and orchestrated by the integrity layer; it executes only during a Sleep Cycle, via a staged pipeline:
@@ -278,11 +278,11 @@ Three flows govern component interactions at runtime.
 
 **The Execution Flow** is the path of a single action payload. The EXEC receives the payload from the CPE and requests a manifest integrity check from the SIL. The SIL verifies the skill manifest hash against the Integrity Document and returns a grant or denial without modifying the payload. If granted, the EXEC validates the manifest against its own execution rules and executes the skill. The Skill Result is returned to the CPE and simultaneously written to the MIL. If either check fails, the payload is rejected and the rejection is logged to the MIL.
 
-**The Health Flow** runs continuously and orthogonally to the Cognitive and Execution flows. Each component emits health signals to the SIL at defined intervals. The SIL evaluates incoming signals, applies autonomous corrections within its authority, and escalates via the Operator Channel when required. The Health Flow does not interrupt active Cognitive or Execution flows. The Health Flow also covers active background skills: the SIL monitors their status and evaluates abnormal terminations according to the active Cognitive Profile.
+**The Health Flow** runs continuously and orthogonally to the Cognitive and Execution flows. Each component emits health signals to the SIL at defined intervals. The SIL evaluates incoming signals, issues corrective signals to affected components and independently re-verifies resolution before clearing any Degraded state, and escalates via the Operator Channel when anomalies cannot be independently verified or re-verification fails. The Health Flow does not interrupt active Cognitive or Execution flows. The Health Flow also covers active background skills: the SIL monitors their status and evaluates abnormal terminations according to the active Cognitive Profile.
 
 Whenever the SIL revokes the session token due to an anomaly (Critical state), the SIL may access and preserve the current Volatile Diagnostic Buffer as a diagnostic record in the Integrity Log.
 
-One constraint applies to all three flows: **only the MIL writes mnemonic content**. The CPE reasons, the EXEC acts — neither writes to the Entity Store directly. The SIL writes exclusively to integrity content (the Integrity Document and the Integrity Log); all mnemonic persistence is mediated by the MIL.
+One constraint applies to all three flows: **only the MIL writes mnemonic content**. The CPE reasons, the EXEC acts — neither writes to the Entity Store directly. The SIL writes exclusively to integrity content (the Integrity Document and the Integrity Log) and persists the session token directly to the Entity Store; all mnemonic persistence is mediated by the MIL.
 
 ### 5.2 Trust Model
 
@@ -306,7 +306,7 @@ Each concept defined in Section 3 is realized by a specific configuration of com
 
 **Memory** is realized exclusively by the MIL. No other component writes mnemonic content. The MIL's two stores — the Session Store and the Memory Store — are the sole authoritative record of everything the entity has processed and learned.
 
-**Integrity** is realized across four concurrent mechanisms. First, the SIL and the EXEC operate as two independent authorization gates on every skill execution: the EXEC requests a manifest integrity check from the SIL, which verifies structural integrity and returns a grant or denial; the EXEC applies its own validation as the second gate. Both gates must pass independently; neither substitutes for the other. Second, the SIL orchestrates the Heartbeat Protocol — continuously monitoring all components, evaluating health signals, and escalating to the Operator when anomalies exceed its correction authority. Third, structural evolution is realized jointly by the MIL and the SIL executing the Endure Protocol during the Sleep Cycle: the atomic commit writes all structural files — including the Integrity Document — as a single indivisible operation, extending the verified chain. Fourth, the CPE maintains a Volatile Diagnostic Buffer for each active Cognitive Cycle, available to the SIL for diagnostic purposes on anomaly-triggered escalation.
+**Integrity** is realized across four concurrent mechanisms. First, the SIL and the EXEC operate as two independent authorization gates on every skill execution: the EXEC requests a manifest integrity check from the SIL, which verifies structural integrity and returns a grant or denial; the EXEC applies its own validation as the second gate. Both gates must pass independently; neither substitutes for the other. Second, the SIL orchestrates the Heartbeat Protocol — continuously monitoring all components, evaluating health signals, independently re-verifying resolution before clearing Degraded states, and escalating to the Operator when anomalies exceed its correction authority or re-verification fails. Third, structural evolution is realized jointly by the MIL and the SIL executing the Endure Protocol during the Sleep Cycle: the atomic commit writes all structural files — including the Integrity Document — as a single indivisible operation, extending the verified chain. Fourth, the CPE maintains a Volatile Diagnostic Buffer for each active Cognitive Cycle, available to the SIL for diagnostic purposes on anomaly-triggered escalation.
 
 **Individuation** is realized sequentially across all components during the FAP. The FAP is the only point in the entity's lifecycle where components initialize in strict dependency order rather than operating concurrently. The output of a completed FAP — the Imprint Record in the Memory Store and the Genesis Omega in the integrity chain — is the product of all components having completed their initialization stages in sequence.
 
@@ -328,7 +328,7 @@ Every boot after the first follows the Boot Sequence. Every session ends in a Sl
 
 ### 6.1 Cold-Start and First Activation
 
-A cold-start occurs exactly once: when the entity boots for the first time with an empty Memory Store. It triggers the FAP (defined in §3.5), which initializes the entity's identity, establishes the Operator Bound, writes the Imprint Record, generates the Integrity Document, and derives the Genesis Omega. The FAP completes by issuing the first session token. From this point forward, all subsequent startups follow the Boot Sequence.
+A cold-start occurs exactly once: when the entity boots for the first time with an empty Memory Store. It triggers the FAP (defined in §3.5), which initializes the entity's identity, establishes the Operator Bound, generates the Integrity Document, finalizes and writes the Imprint Record (which includes the Integrity Document), and derives the Genesis Omega. The FAP completes by issuing the first session token. From this point forward, all subsequent startups follow the Boot Sequence.
 
 The cold-start is irreversible. An entity that has completed the FAP cannot be re-initialized without destroying its Memory Store — which constitutes the creation of a new, unrelated entity.
 
@@ -364,7 +364,7 @@ The Sleep Cycle is the maintenance window that executes after every session clos
 memory consolidation → garbage collection → Endure execution (if queued)
 ```
 
-The first two stages — **memory consolidation** and **garbage collection** — are managed by the MIL. Memory consolidation transfers session data from the Session Store into long-term records in the Memory Store. Garbage collection removes expired or superseded mnemonic content. The third stage — **Endure execution** — is managed by the SIL, which initiates and orchestrates the Endure Protocol pipeline for any structural changes queued during the session. Endure executes only if structural changes are queued; otherwise this stage is skipped.
+The first two stages — **memory consolidation** and **garbage collection** — are managed by the MIL. Memory consolidation transfers session data from the Session Store into long-term records in the Memory Store. Garbage collection removes expired or superseded mnemonic content. The third stage — **Endure execution** — is managed by the SIL, which initiates and orchestrates the Endure Protocol pipeline for any structural changes queued during the session. Endure executes only if evolutionary events are queued; otherwise this stage is skipped.
 
 No two stages execute concurrently. The Sleep Cycle is the only window in which the Entity Store may receive structural writes. At Sleep Cycle completion, the entity is ready for the next Boot Sequence.
 
@@ -385,7 +385,7 @@ This section identifies what HACA-Arch guarantees structurally, what it explicit
 HACA-Arch provides four structural security properties by construction:
 
 - **Identity continuity** — the Genesis Omega and the integrity chain ensure that any tampering with committed structural state is detectable at the next boot or Heartbeat Vital Check.
-- **Mediated execution** — no action reaches the host environment without passing through the two-gate authorization sequence: first the SIL verifies the skill manifest against the Integrity Document, then the EXEC validates its own execution rules. Skills operate within declared capability boundaries and have no direct access to the Entity Store.
+- **Mediated execution** — no action reaches the host environment without passing through the two-gate authorization sequence: first the SIL verifies the skill manifest against the Integrity Document, then the EXEC validates its own execution rules. Skills operate within declared capability boundaries and have no direct access to the Entity Store. In a Transparent topology, this boundary is architecturally enforceable. In an Opaque topology, enforcement is the responsibility of the deployment configuration.
 - **Authority hierarchy** — the invariant Operator > SIL > CPE ensures that no internal component can elevate its own authority. The SIL bypasses the CPE when escalating to the Operator, preventing a compromised cognitive engine from intercepting integrity alerts.
 - **Cognitive Sovereignty** — no external entity may write directly to the local Entity Store. Peer-sourced content entering through the CMI requires SIL approval before it enters the local cognitive namespace.
 
@@ -419,9 +419,13 @@ All terms defined in this specification, in alphabetical order.
 
 **Blackboard** — the shared consolidation space of a CMI channel session: a record of the target task state and knowledge developed during the session, accessible to all participating entities. Each entity reads the Blackboard independently and decides what to retain in its own Entity Store, following its normal authorization path.
 
+**Boot Sequence** — the gated validation pipeline executed by the SIL at every startup after the cold-start, before any operational state is loaded or session token is issued. Verifies the integrity record, structural components, and execution confinement in sequence. Aborted if any gate fails; suspended if a Passive Distress Beacon is present. Serves as the crash recovery procedure as well.
+
 **CMI (Cognitive Mesh Interface)** — the optional component that enables the entity to communicate with peer entities, access shared knowledge spaces, and participate in a Cognitive Mesh. Activated by the HACA-CMI extension.
 
 **Cognitive Cycle** — the atomic unit of cognition: stimulus received → context loaded → intent generated → intent dispatched. The cycle is complete when the intent leaves the CPE. What follows — execution, persistence, monitoring — is the consequence of the dispatched intent, handled by the responsible components independently.
+
+**Cognitive Flow** — the path of a single Cognitive Cycle through the component topology: the CPE requests context from the MIL, executes the reasoning phase, and dispatches a single intent payload to its target component. The Cognitive Cycle is complete at the point of dispatch.
 
 **Cognitive Profile** — a mutually exclusive, permanent operational contract selected at first activation. Determines the entity's autonomy model, memory architecture, and drift tolerance. HACA-Arch defines two profiles: HACA-Core and HACA-Evolve.
 
@@ -459,6 +463,8 @@ All terms defined in this specification, in alphabetical order.
 
 **HACA-Evolve** — the supervised-autonomy Cognitive Profile. The entity may initiate structural evolution within its current authorization scope. Supports both Transparent and Opaque cognitive engine topologies.
 
+**Health Flow** — the continuous, orthogonal monitoring flow through which each component emits health signals to the SIL at defined intervals. The SIL evaluates signals, independently re-verifies resolution before clearing Degraded states, and escalates via the Operator Channel when required. Also covers active background skills.
+
 **Heartbeat Protocol** — the asynchronous, continuous monitoring mechanism. Tracks operational activity and triggers a Vital Check when a threshold `T` is reached. Maintains a parallel watchdog timer per active skill execution to detect stalls.
 
 **Imprint** — the one-time initialization event that establishes the entity's identity. Executes during the first boot with an empty Memory Store. Produces three artifacts: the Imprint Record, the Integrity Document, and the Genesis Omega. The presence of the Imprint Record in the Memory Store is the definitive indicator that a valid entity instance exists.
@@ -485,7 +491,7 @@ All terms defined in this specification, in alphabetical order.
 
 **Omega** — the runtime operational state of the entity: the active configuration produced by the Entity Store, the loaded model, and the Operator binding operating together within a session. Strictly local; does not transfer or replicate.
 
-**Opaque CPE** — a CPE topology in which the cognitive environment is partially or fully managed by the host; inference parameters, system instructions, or context may be injected outside the entity's control.
+**Opaque CPE** — a CPE topology in which the model has native host access through an IDE, wrapper, or tool-enabled environment. The HACA layer cannot guarantee component separation — the host may inject capabilities or context outside its control. Supported by HACA-Evolve; incompatible with HACA-Core.
 
 **Operator** — the human authority to whom the entity is bound. Defines the entity's maximum authorization scope. Without an active Operator binding, the entity suspends all intent generation.
 
@@ -517,9 +523,9 @@ All terms defined in this specification, in alphabetical order.
 
 **Stimulus** — the input that initiates a Cognitive Cycle. Valid origins: direct Operator input, internal scheduled triggers, responses from internal components, or inbound signals from peer entities (when the CMI is present).
 
-**Structural Content** — persona definitions, skill manifests, configurations, and behavioral parameters. Every structural write is an evolutionary event requiring explicit authorization and must pass through the Endure Protocol.
+**Structural Content** — persona definitions, skill manifests, configurations, behavioral parameters, and Behavioral and Semantic Probes. Every structural write is an evolutionary event requiring explicit authorization and must pass through the Endure Protocol.
 
-**Transparent CPE** — a CPE topology in which the HACA layer has deterministic control over prompt boundaries, context window, and inference parameters. Required by HACA-Core.
+**Transparent CPE** — a CPE topology in which the model is isolated from the host and the HACA layer has exclusive control over what it can access and execute. Each component operates within its declared scope only; component separation is architecturally enforceable. Required by HACA-Core.
 
 **Vital Check** — the integrity assessment triggered by the Heartbeat Protocol at threshold `T`. Produces one of three states: Nominal, Degraded, or Critical.
 
