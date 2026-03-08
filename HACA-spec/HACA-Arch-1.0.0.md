@@ -384,7 +384,7 @@ HACA-Arch provides four structural security properties by construction:
 - **Identity continuity** — the Genesis Omega and the integrity chain ensure that any tampering with committed structural state is detectable at the next boot or Heartbeat Vital Check.
 - **Mediated execution** — no action reaches the host environment without passing through the two-gate authorization sequence: first the SIL verifies the skill manifest against the Integrity Document, then the EXEC validates its own execution rules. Skills operate within declared capability boundaries and have no direct access to the Entity Store. In a Transparent topology, this boundary is architecturally enforceable. In an Opaque topology, enforcement is the responsibility of the deployment configuration.
 - **Authority hierarchy** — the invariant Operator > SIL > CPE ensures that no internal component can elevate its own authority. The SIL bypasses the CPE when escalating to the Operator, preventing a compromised cognitive engine from intercepting integrity alerts.
-- **Cognitive Sovereignty** — no external entity may write directly to the local Entity Store. Peer-sourced content entering through the CMI requires SIL approval before it enters the local cognitive namespace.
+- **Cognitive Sovereignty** — no external entity may write directly to the local Entity Store. Peer-sourced content arriving through the CMI enters as a stimulus processed by the CPE; the entity always acts on itself. Structural identity verification of peer nodes is handled at enrollment via HACA-CMI mechanisms.
 
 ### 7.2 Prompt Injection
 
