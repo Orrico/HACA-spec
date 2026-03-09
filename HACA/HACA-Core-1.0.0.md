@@ -186,3 +186,29 @@ The Cognitive Mesh Interface is an optional architectural extension. A HACA-Core
 **CMI messages as stimuli.** Inbound CMI messages enter the cognitive pipeline as stimuli — they do not bypass it. They are subject to the same session token requirement as any other stimulus: messages received without an active session token are held in the pre-session buffer under the policy defined in §4.3. Outbound CMI messages are intent payloads dispatched by the cognitive engine through the standard pipeline; they do not constitute a separate write path to the Entity Store.
 
 **Logging.** Every inbound and outbound CMI message must be logged to the Integrity Log with a timestamp, the channel identifier, and the peer entity identifier. CMI traffic is part of the operational audit trail and subject to the retention policy defined in §4.2.
+
+---
+
+## 7. Compliance
+
+A deployment is HACA-Core compliant if and only if it satisfies all requirements in this section. Each requirement is non-negotiable — partial compliance is not compliance.
+
+**Topology.** The deployment declares Transparent CPE topology in the structural baseline. The SIL verifies topology at every boot before issuing a session token. A detected Opaque topology causes a permanent halt with no session token issued and no recovery path.
+
+**Structural baseline declarations.** The structural baseline declares, at deployment time and immutably at runtime: the CPE topology; the Heartbeat threshold `T`, interval `I`, and activity metric; the Watchdog timeout per skill execution; the background skill TTL policy; the probabilistic Semantic Probe comparison mechanism; the context window critical threshold; the Operator Channel delivery mechanism; the Passive Distress Beacon mechanism; the boot loop crash threshold N; and the pre-session buffer capacity, ordering, persistence, and overflow policy.
+
+**Drift policy.** All three drift categories — Semantic, Identity, and Evolutionary — escalate immediately to Critical without passing through the Degraded state. No tolerance threshold, grace period, or corrective attempt precedes escalation for any drift condition.
+
+**Integrity Log.** The evolutionary chain is never compacted, archived, or deleted. All routine operational records are retained in full for the lifetime of the deployment. No compaction policy is defined or applied.
+
+**Action Ledger.** Every skill with irreversible side effects is covered by a write-ahead entry in the Session Store before execution. Unresolved entries after a crash are surfaced to the Operator before the next session token is issued and are never re-executed automatically.
+
+**Persona.** The persona definition explicitly encodes Axiom IV constraints — prohibiting self-preservation reasoning, sentience claims, replication behavior, and resistance to legitimate Operator instruction — as hard behavioral boundaries, not soft guidelines.
+
+**Evolution Gate.** Every Evolution Proposal is held by the SIL pending explicit Operator approval before being queued. Implicit authorization is never accepted. The outcome of Operator review — approval or rejection — is never returned to the cognitive engine.
+
+**Operator Bound.** A valid Operator Bound must be present in the Entity Store before any session token is issued. An absent or invalid Bound results in permanent inactivity with no session token issued until a valid Bound is established.
+
+**Fault & Recovery.** The boot loop crash threshold N is declared in the structural baseline. Consecutive crashes reaching N activate the Passive Distress Beacon and suspended halt. The Passive Distress Beacon mechanism is readable from the Entity Store without network connectivity or running processes. The Operator Channel delivery mechanism provides a confirmation signal and is verified at every boot.
+
+**CMI (if present).** If the CMI extension is active, the deployment conforms to the HACA-CMI specification and this document's CMI Policy: only private channels are used; the participant list and trusted peer registry are declared in the structural baseline and Operator-approved; no channel configuration is modified at runtime; all CMI traffic is logged to the Integrity Log.
