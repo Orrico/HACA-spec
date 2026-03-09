@@ -559,6 +559,8 @@ All terms defined in this specification, in alphabetical order.
 
 **CMI (Cognitive Mesh Interface)** — the optional component that enables the entity to communicate with peer entities, access shared knowledge spaces, and participate in a Cognitive Mesh. Activated by the HACA-CMI extension.
 
+**Cognition** — the processing cycle in which the entity receives a stimulus, generates intent, and produces actions or state writes. Realized across two flows: the Cognitive Flow (CPE reasoning and intent dispatch) and the Execution Flow (EXEC host actuation). Cognition requires an active session token; it is suspended during the Sleep Cycle.
+
 **Cognitive Cycle** — the atomic unit of cognition: stimulus received → context loaded → intent generated → intent dispatched. The cycle is complete when the intent leaves the CPE. What follows — execution, persistence, monitoring — is the consequence of the dispatched intent, handled by the responsible components independently.
 
 **Cognitive Flow** — the path of a single Cognitive Cycle through the component topology: the CPE requests context from the MIL, executes the reasoning phase, and dispatches a single intent payload to its target component. The Cognitive Cycle is complete at the point of dispatch.
@@ -577,6 +579,10 @@ All terms defined in this specification, in alphabetical order.
 
 **Crash Recovery** — the procedure for resuming after an uncontrolled host interruption. The entity resumes from the last Sleep Cycle boundary; any session progress not yet consolidated is discarded.
 
+**Critical** — an integrity state produced by a Vital Check indicating that the detected anomaly exceeds the integrity layer's correction capacity, or involves the cognitive engine or the integrity layer itself. The session token MUST be immediately revoked and the integrity layer MUST escalate to the Operator via the Operator Channel.
+
+**Degraded** — an integrity state produced by a Vital Check indicating a localized anomaly that the integrity layer can independently verify from outside the affected component. The integrity layer MUST issue a corrective signal to the affected component; if re-verification after correction fails, the condition MUST escalate to Critical.
+
 **Drift Framework** — the three-category taxonomy of behavioral or structural deviation that the integrity layer monitors: Semantic Drift, Identity Drift, and Evolutionary Drift.
 
 **Endure Protocol** — the sole authorized path for structural writes to the Entity Store. Executes only during a Sleep Cycle via a staged pipeline ending in an atomic commit.
@@ -588,6 +594,8 @@ All terms defined in this specification, in alphabetical order.
 **Entity Store** — the persistent, portable, implementation-agnostic data store containing everything required to reconstruct the entity's operational state: identity, memories, skills, configurations, and execution history.
 
 **Evolution Proposal** — a special class of intent payload produced by the CPE during an active session, addressed directly to the SIL. Declares a proposed self-evolution — changes to the entity's structure or accumulated semantic knowledge considered significant enough to become part of the entity's identity baseline. All such changes require Operator authorization: explicit under HACA-Core, implicit within the entity's defined scope under HACA-Evolve. The SIL verifies authorization coverage before any change takes effect; verified proposals are queued as pending evolutionary events. Rejected proposals are logged; the proposed content remains unchanged.
+
+**Evolutionary Drift** — a discontinuity or authorization gap in the integrity chain: a commit that does not reference its predecessor, a structural state whose hash does not match the recorded commit, or a recorded evolution that lacks a corresponding Operator authorization. Detected by the integrity layer at each evolutionary protocol execution. Any detected discontinuity MUST escalate directly to Critical and the session token MUST be immediately revoked.
 
 **EXEC (Execution Layer)** — the entity's actuation layer and the sole component authorized to execute skills against the host environment. Stateless; executes skills packaged as discrete capability units. System-level host primitives (Operator Channel, Passive Distress Beacon) are outside this domain.
 
@@ -605,9 +613,15 @@ All terms defined in this specification, in alphabetical order.
 
 **Heartbeat Protocol** — the asynchronous, continuous monitoring mechanism. Triggers a Vital Check when either a threshold `T` is reached or a maximum time interval `I` has elapsed since the last Vital Check — whichever comes first. This dual trigger ensures Vital Checks occur even when the entity is idle or activity has stalled.
 
+**Identity Drift** — deviation of the active persona configuration from its last committed structural definition. Detected by the integrity layer per Heartbeat Vital Check through structural hash comparison against the Integrity Document.
+
 **Imprint** — the one-time initialization event that establishes the entity's identity. Executes during the first boot with an empty Memory Store. Produces three artifacts: the Imprint Record, the Integrity Document, and the Genesis Omega. The presence of the Imprint Record in the Memory Store is the definitive indicator that a valid entity instance exists.
 
 **Imprint Record** — the persistent record of the entity's initial identity, Operator Bound, structural baseline, and the versions of the HACA-Arch specification and active Cognitive Profile under which the entity was initialized, written to the Memory Store during Imprint. In its finalized form, includes the Integrity Document. Its presence is the definitive indicator that a valid entity instance exists.
+
+**Individuation** — the one-time initialization process that produces a unique, Operator-bound entity instance with a verifiable identity record. Executes during the entity's first activation via the FAP. Produces the Imprint Record, the Integrity Document, and the Genesis Omega.
+
+**Integrity** — the set of architectural mechanisms that ensure the entity's structure and behavior remain consistent with its defined and authorized state. Encompasses the Integrity Document, the Integrity Log, the Endure Protocol, the Heartbeat Protocol, and the Drift Framework, all owned and enforced by the SIL.
 
 **Integrity Content** — the class of Entity Store content written exclusively by the SIL: the Integrity Document, the Integrity Log, and the session token. No other component has write authority over integrity content.
 
@@ -618,6 +632,8 @@ All terms defined in this specification, in alphabetical order.
 **Intent** — the output of the cognitive engine's reasoning phase: a single structured payload addressed to exactly one component (execution layer, memory layer, integrity layer, or mesh interface). A Cognitive Cycle produces exactly one intent payload. Compound operations are expressed as chains of consecutive cycles, where each step's result serves as the internal stimulus for the next.
 
 
+**Memory** — the entity's authoritative state store, managed exclusively by the MIL. Partitioned into two stores: the Session Store (active session data) and the Memory Store (episodic records and accumulated semantic knowledge). Consolidated during the Sleep Cycle.
+
 **Memory Store** — the long-term partition of the entity's memory: episodic records of past operations and semantic knowledge accumulated over time.
 
 **Mesh Channel** — the fundamental unit of CMI coordination: a purposive, time-bounded space opened by an owner entity, with a declared target task and a visibility type (public or private). HACA-Core entities may only participate in private Mesh Channels; HACA-Evolve entities may participate in both. A Mesh Channel is closed by its owner or when its target task is complete; all participating nodes return to autonomous operation at close.
@@ -625,6 +641,8 @@ All terms defined in this specification, in alphabetical order.
 **MIL (Memory Interface Layer)** — the entity's persistence layer and sole authoritative source of recorded state. Has exclusive write authority over mnemonic content. Does not interpret or evaluate stored data.
 
 **Mnemonic Content** — memory records and operational state written continuously by the memory layer during normal operation. Requires no additional authorization beyond normal MIL operation; however, accumulated semantic knowledge may be proposed for promotion to the entity's structural baseline via an Evolution Proposal, which requires Operator authorization.
+
+**Nominal** — an integrity state produced by a Vital Check indicating that all component hashes match the Integrity Document and all health signals are within bounds. Operation continues without interruption.
 
 **Omega** — the runtime operational state of the entity: the active configuration produced by the Entity Store, the loaded model, and the Operator binding operating together within a session. Strictly local; does not transfer or replicate.
 
@@ -643,6 +661,8 @@ All terms defined in this specification, in alphabetical order.
 **Persona** — the layer within the Entity Store that defines the entity's behavioral constraints, operational drives, and response characteristics. The primary differentiator between entities sharing the same inference model.
 
 **Reciprocal SIL Watchdog** — a local monitor maintained by each component that detects when the SIL has stopped responding beyond a defined threshold, or when the SIL's responses are inconsistent with expected integrity criteria. Either condition triggers direct escalation to the Operator via the Operator Channel, bypassing the SIL.
+
+**Semantic Drift** — accumulated memory content has diverged from the entity's Semantic Probes. Detected by the integrity layer during the Sleep Cycle by comparing Memory Store content against the Semantic Probes via an implementation-defined comparison mechanism. Under HACA-Core, any divergence MUST escalate directly to Critical. Under HACA-Evolve, covered divergence proceeds to the evolutionary protocol; uncovered divergence MUST be treated as an anomaly.
 
 **Semantic Probes** — the entity's semantic drift reference baseline: a set of semantic anchors derived from structural content and maintained by the integrity layer. The SIL uses semantic probes as reference anchors to measure divergence during the Sleep Cycle via an implementation-defined comparison mechanism. Initialized from the Imprint Record at first activation; updated only through authorized structural evolution.
 
