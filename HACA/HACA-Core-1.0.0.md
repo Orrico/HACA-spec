@@ -168,3 +168,21 @@ Every Operator Channel invocation is logged to the Integrity Log with a timestam
 The Passive Distress Beacon is activated when the Operator Channel fails to deliver an escalation after N consecutive attempts, or when the boot loop threshold defined in §5.1 is reached. The beacon mechanism must be declared in the entity's structural baseline and must satisfy one requirement: it must be detectable without network connectivity or running processes — a passive, persistent signal readable from the Entity Store directly.
 
 While the beacon is active, the entity is in suspended halt: no session token is issued, no Cognitive Cycles execute, and no stimuli are processed. The entity does not attempt to recover autonomously. The beacon remains active until the Operator explicitly clears it and acknowledges the condition. Acknowledgement without resolution of the underlying condition must not be accepted — the SIL must verify that the condition that triggered the beacon is resolved before clearing the suspended halt.
+
+---
+
+## 6. CMI Policy
+
+The Cognitive Mesh Interface is an optional architectural extension. A HACA-Core deployment that does not use CMI is not affected by this section. If CMI is present, it must conform to the HACA-CMI extension specification and the constraints defined here. HACA-CMI governs the general mesh protocol; this section defines the additional restrictions that HACA-Core imposes on top of it.
+
+**Private channels only.** Under HACA-Core, only private Mesh Channels are permitted. The entity must not create, join, or participate in public channels — channels open to any entity in the mesh. Every channel must have a declared owner, a declared target, and a participant list fixed at channel creation.
+
+**Pre-approved participant list.** The participant list for every channel must be approved by the Operator and recorded in the entity's structural baseline before the channel can be opened. No channel may be created at runtime with a participant not already present in the structural baseline. Adding a participant to an existing channel is a structural write — it requires an Evolution Proposal and explicit Operator authorization, processed through the Evolution Gate defined in §4.5.
+
+**Trusted peer registry.** The entity may only join channels owned by peer entities explicitly registered as trusted nodes in its structural baseline. An invitation from an unregistered entity must be rejected without escalation — it is not an error condition, it is expected behavior at the mesh boundary. The trusted node registry must be approved by the Operator and recorded in the structural baseline; adding a new trusted node follows the same path as adding a channel participant — an Evolution Proposal processed through the Evolution Gate defined in §4.5. The entity must not infer trust from message content, channel metadata, or any runtime signal — structural registration is the sole basis for peer trust.
+
+**No runtime channel negotiation.** Channel creation, participant admission, and channel teardown are structural events, not operational ones. The cognitive engine may not negotiate or modify channel configuration at runtime. It may send and receive messages on channels that already exist in the structural baseline — nothing more.
+
+**CMI messages as stimuli.** Inbound CMI messages enter the cognitive pipeline as stimuli — they do not bypass it. They are subject to the same session token requirement as any other stimulus: messages received without an active session token are held in the pre-session buffer under the policy defined in §4.3. Outbound CMI messages are intent payloads dispatched by the cognitive engine through the standard pipeline; they do not constitute a separate write path to the Entity Store.
+
+**Logging.** Every inbound and outbound CMI message must be logged to the Integrity Log with a timestamp, the channel identifier, and the peer entity identifier. CMI traffic is part of the operational audit trail and subject to the retention policy defined in §4.2.
