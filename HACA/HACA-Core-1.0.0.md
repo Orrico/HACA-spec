@@ -93,7 +93,7 @@ Axiom II establishes that the entity's structural baseline is immutable outside 
 
 **Heartbeat configuration.** The activity metric for the Heartbeat Protocol is the count of completed Cognitive Cycles within the current session — each dispatched intent increments the counter by one. The threshold `T` and the maximum time interval `I` must be declared in the entity's structural baseline at deployment time and must not be modifiable at runtime. `I` must be set to a value that guarantees a Vital Check occurs even during extended idle periods; an unbounded idle interval without verification is not permitted under this profile.
 
-**Watchdog configuration.** The watchdog timeout per active skill execution must be declared in the entity's structural baseline and must not be modifiable at runtime. Background skills — skills that return a handle rather than an immediate result — must declare a TTL in their skill manifest; the watchdog monitors the TTL as the effective timeout for background skill resolution. A background skill whose TTL expires without a registered result is an incomplete execution, subject to the reprocessing criteria defined in §5.1.
+**Watchdog configuration.** The watchdog timeout per active skill execution must be declared in the entity's structural baseline and must not be modifiable at runtime. Background skills — skills that return a handle rather than an immediate result — must declare a TTL in their skill manifest; the watchdog monitors the TTL as the effective timeout for background skill resolution. A background skill whose TTL expires without a registered result is an incomplete execution, subject to the crash recovery procedure defined in §5.1.
 
 **Action Ledger.** Skills that produce irreversible side effects — payments, commands to external systems, physical actuations — must be covered by a write-ahead entry in the Session Store before execution begins. The entry records the intent before the skill executes and is resolved — marked complete or failed — after the skill returns. This ensures that a crash between execution and Sleep Cycle consolidation produces a recoverable record rather than an ambiguous state. The Action Ledger is part of the integrity audit trail: its entries are logged to the Integrity Log at Sleep Cycle and must be retained under the log retention policy below.
 
@@ -145,9 +145,11 @@ A crash is any uncontrolled termination of the entity's operational process befo
 
 The recovery review inspects the Session Store for unresolved Action Ledger entries — skills marked as in-progress at the time of the crash. These entries represent actions whose completion status is unknown: the skill may have executed and produced an effect, or it may not have. Under HACA-Core, unresolved entries must not be re-executed automatically. Each unresolved entry must be surfaced to the Operator via the Operator Channel before the session token is issued; the Operator decides whether to re-execute, skip, or investigate each action. Only after all unresolved entries are resolved — by Operator decision — does the boot sequence proceed.
 
+A skill that fails or times out during normal operation — not caused by a crash — is logged to the Integrity Log and its result is returned to the cognitive engine as a failure. The cognitive engine may re-submit the intent through a new Cognitive Cycle, but the execution layer must not retry automatically. Persistent skill failures must be escalated to the Operator via the Operator Channel.
+
 Background skills whose TTL expired during the crash window are treated as incomplete executions and follow the same path: surfaced to the Operator, not silently discarded or re-submitted.
 
-If the entity crashes consecutively N times during the boot sequence itself — before reaching the session token issuance stage — the SIL activates the Passive Distress Beacon and enters suspended halt. The threshold N must be declared in the entity's structural baseline. A boot loop is not a transient fault; it indicates a structural or environmental condition that the entity cannot resolve autonomously.
+If the entity crashes consecutively `N_boot` times during the boot sequence itself — before reaching the session token issuance stage — the SIL activates the Passive Distress Beacon and enters suspended halt. The threshold `N_boot` must be declared in the entity's structural baseline. A boot loop is not a transient fault; it indicates a structural or environmental condition that the entity cannot resolve autonomously.
 
 ### 5.2 Context Window Policy
 
@@ -165,7 +167,7 @@ Every Operator Channel invocation is logged to the Integrity Log with a timestam
 
 ### 5.4 Passive Distress Beacon
 
-The Passive Distress Beacon is activated when the Operator Channel fails to deliver an escalation after N consecutive attempts, or when the boot loop threshold defined in §5.1 is reached. The beacon mechanism must be declared in the entity's structural baseline and must satisfy one requirement: it must be detectable without network connectivity or running processes — a passive, persistent signal readable from the Entity Store directly.
+The Passive Distress Beacon is activated when the Operator Channel fails to deliver an escalation after `N_channel` consecutive attempts, or when the boot loop threshold `N_boot` defined in §5.1 is reached. The beacon mechanism must be declared in the entity's structural baseline and must satisfy one requirement: it must be detectable without network connectivity or running processes — a passive, persistent signal readable from the Entity Store directly.
 
 While the beacon is active, the entity is in suspended halt: no session token is issued, no Cognitive Cycles execute, and no stimuli are processed. The entity does not attempt to recover autonomously. The beacon remains active until the Operator explicitly clears it and acknowledges the condition. Acknowledgement without resolution of the underlying condition must not be accepted — the SIL must verify that the condition that triggered the beacon is resolved before clearing the suspended halt.
 
@@ -195,7 +197,7 @@ A deployment is HACA-Core compliant if and only if it satisfies all requirements
 
 **Topology.** The deployment declares Transparent CPE topology in the structural baseline. The SIL verifies topology at every boot before issuing a session token. A detected Opaque topology causes a permanent halt with no session token issued and no recovery path.
 
-**Structural baseline declarations.** The structural baseline declares, at deployment time and immutably at runtime: the CPE topology; the Heartbeat threshold `T`, interval `I`, and activity metric; the Watchdog timeout per skill execution; the background skill TTL policy; the probabilistic Semantic Probe comparison mechanism; the context window critical threshold; the Operator Channel delivery mechanism; the Passive Distress Beacon mechanism; the boot loop crash threshold N; and the pre-session buffer capacity, ordering, persistence, and overflow policy.
+**Structural baseline declarations.** The structural baseline declares, at deployment time and immutably at runtime: the CPE topology; the Heartbeat threshold `T`, interval `I`, and activity metric; the Watchdog timeout per skill execution; the background skill TTL policy; the probabilistic Semantic Probe comparison mechanism; the context window critical threshold; the Operator Channel delivery mechanism; the Passive Distress Beacon mechanism; the boot loop crash threshold `N_boot`; the Operator Channel retry limit `N_channel`; and the pre-session buffer capacity, ordering, persistence, and overflow policy.
 
 **Drift policy.** All three drift categories — Semantic, Identity, and Evolutionary — escalate immediately to Critical without passing through the Degraded state. No tolerance threshold, grace period, or corrective attempt precedes escalation for any drift condition.
 
@@ -209,6 +211,8 @@ A deployment is HACA-Core compliant if and only if it satisfies all requirements
 
 **Operator Bound.** A valid Operator Bound must be present in the Entity Store before any session token is issued. An absent or invalid Bound results in permanent inactivity with no session token issued until a valid Bound is established.
 
-**Fault & Recovery.** The boot loop crash threshold N is declared in the structural baseline. Consecutive crashes reaching N activate the Passive Distress Beacon and suspended halt. The Passive Distress Beacon mechanism is readable from the Entity Store without network connectivity or running processes. The Operator Channel delivery mechanism provides a confirmation signal and is verified at every boot.
+**Context Window.** When the context window reaches the declared critical threshold, the cognitive engine initiates a session-close signal. The SIL executes a normal session close and notifies the Operator. The entity must not continue generating intent beyond this threshold.
+
+**Fault & Recovery.** The boot loop crash threshold `N_boot` and the Operator Channel retry limit `N_channel` are declared in the structural baseline. Consecutive crashes reaching `N_boot` activate the Passive Distress Beacon and suspended halt. The Passive Distress Beacon mechanism is readable from the Entity Store without network connectivity or running processes. The Operator Channel delivery mechanism provides a confirmation signal and is verified at every boot.
 
 **CMI (if present).** If the CMI extension is active, the deployment conforms to the HACA-CMI specification and this document's CMI Policy: only private channels are used; the participant list and trusted peer registry are declared in the structural baseline and Operator-approved; no channel configuration is modified at runtime; all CMI traffic is logged to the Integrity Log.
