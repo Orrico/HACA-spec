@@ -477,7 +477,7 @@ All terms defined in this specification, in alphabetical order.
 
 **Imprint** — the one-time initialization event that establishes the entity's identity. Executes during the first boot with an empty Memory Store. Produces three artifacts: the Imprint Record, the Integrity Document, and the Genesis Omega. The presence of the Imprint Record in the Memory Store is the definitive indicator that a valid entity instance exists.
 
-**Imprint Record** — the persistent record of the entity's initial identity, Operator Bound, and structural baseline, written to the Memory Store during Imprint. In its finalized form, includes the Integrity Document. Its presence is the definitive indicator that a valid entity instance exists.
+**Imprint Record** — the persistent record of the entity's initial identity, Operator Bound, structural baseline, and the versions of the HACA-Arch specification and active Cognitive Profile under which the entity was initialized, written to the Memory Store during Imprint. In its finalized form, includes the Integrity Document. Its presence is the definitive indicator that a valid entity instance exists.
 
 **Integrity Content** — the class of Entity Store content written exclusively by the SIL: the Integrity Document, the Integrity Log, and the session token. No other component has write authority over integrity content.
 
