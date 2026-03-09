@@ -132,3 +132,39 @@ Axiom V establishes that the Operator is the sole, non-delegable source of struc
 **Authorization chain integrity.** Every evolutionary commit in the Integrity Chain must reference the specific Operator authorization act that covered it. A commit without a traceable authorization reference is an Evolutionary Drift violation — it escalates immediately to Critical regardless of whether the structural change itself appears benign. The integrity of the authorization chain is as important as the integrity of the structural state it governs.
 
 **Non-delegation invariant.** Operator authority cannot be transferred to another entity, component, or automated process — not temporarily, not conditionally, not by the Operator's own instruction. Every authorization must originate directly from the bound Operator. Deployments that require shared oversight or succession mechanisms must address those concerns at the governance level, outside the entity's operational scope — as noted in HACA-Arch §3.5.
+
+---
+
+## 5. Fault & Recovery
+
+Fault and recovery behavior covers conditions that the entity's normal operational pipeline cannot handle — crashes, resource exhaustion, and escalation failures. Under HACA-Core, the recovery posture is conservative: when in doubt, halt and surface to the Operator rather than attempt autonomous resolution.
+
+### 5.1 Crash Recovery
+
+A crash is any uncontrolled termination of the entity's operational process before the Sleep Cycle completes. On the next boot, the SIL executes a recovery review before issuing a session token.
+
+The recovery review inspects the Session Store for unresolved Action Ledger entries — skills marked as in-progress at the time of the crash. These entries represent actions whose completion status is unknown: the skill may have executed and produced an effect, or it may not have. Under HACA-Core, unresolved entries must not be re-executed automatically. Each unresolved entry must be surfaced to the Operator via the Operator Channel before the session token is issued; the Operator decides whether to re-execute, skip, or investigate each action. Only after all unresolved entries are resolved — by Operator decision — does the boot sequence proceed.
+
+Background skills whose TTL expired during the crash window are treated as incomplete executions and follow the same path: surfaced to the Operator, not silently discarded or re-submitted.
+
+If the entity crashes consecutively N times during the boot sequence itself — before reaching the session token issuance stage — the SIL activates the Passive Distress Beacon and enters suspended halt. The threshold N must be declared in the entity's structural baseline. A boot loop is not a transient fault; it indicates a structural or environmental condition that the entity cannot resolve autonomously.
+
+### 5.2 Context Window Policy
+
+The context window is a finite resource. As it approaches capacity, the cognitive engine's ability to maintain coherent reasoning across the full session context degrades. Under HACA-Core, degraded reasoning capacity is not an acceptable operational state — the entity must not continue generating intent when the context window is critically full.
+
+When the context window reaches the critical threshold declared in the structural baseline, the cognitive engine must initiate a session-close signal. The SIL executes a normal session close: the Sleep Cycle consolidates accumulated session state, and the entity resumes in a fresh session on the next boot. The Operator is notified of the context-driven session close via the Operator Channel. The threshold at which the context window is considered critical must be declared in the entity's structural baseline and must not be modifiable at runtime.
+
+### 5.3 Operator Channel
+
+The Operator Channel is a system-level host primitive defined in HACA-Arch. Under HACA-Core, the delivery mechanism must satisfy two requirements: it must operate independently of all cognitive components and session state, and it must provide a confirmation signal indicating whether the escalation was successfully delivered.
+
+The specific delivery mechanism — push notification, email, webhook, or equivalent — is defined at deployment time and declared in the entity's structural baseline. The declared mechanism is verified at boot as part of the structural integrity check; a missing or unverifiable Operator Channel declaration must prevent the session token from being issued.
+
+Every Operator Channel invocation is logged to the Integrity Log with a timestamp, the invoking component, the condition that triggered escalation, and the delivery confirmation status.
+
+### 5.4 Passive Distress Beacon
+
+The Passive Distress Beacon is activated when the Operator Channel fails to deliver an escalation after N consecutive attempts, or when the boot loop threshold defined in §5.1 is reached. The beacon mechanism must be declared in the entity's structural baseline and must satisfy one requirement: it must be detectable without network connectivity or running processes — a passive, persistent signal readable from the Entity Store directly.
+
+While the beacon is active, the entity is in suspended halt: no session token is issued, no Cognitive Cycles execute, and no stimuli are processed. The entity does not attempt to recover autonomously. The beacon remains active until the Operator explicitly clears it and acknowledges the condition. Acknowledgement without resolution of the underlying condition must not be accepted — the SIL must verify that the condition that triggered the beacon is resolved before clearing the suspended halt.
