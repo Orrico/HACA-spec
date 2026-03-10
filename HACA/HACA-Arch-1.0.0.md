@@ -107,7 +107,7 @@ The language model is not the entity. The **Operator** is not the entity — the
 
 The **persona** is the layer within the Entity Store that defines the entity's behavioral constraints, operational drives, and response characteristics. The persona is the primary differentiator between entities sharing the same inference model.
 
-**Omega** is the runtime operational state of the entity: the active configuration produced by the Entity Store, the loaded model, and the Operator binding operating together within a session. Omega is instantiated at session start and terminated at session end. It is strictly local — it does not transfer, replicate, or propagate beyond the active session boundary. When a session ends, Omega is terminated; the Entity Store persists.
+**Omega** is the runtime operational state of the entity: the active configuration produced by the Entity Store, the loaded model, and the Operator binding operating together within a session. Omega is instantiated at session start and terminated at session end. It is strictly local — it does not transfer, replicate, or propagate beyond the active session boundary. When a session ends, Omega is terminated; the Entity Store persists. The cryptographic anchor of the entity's first Omega state — the **Genesis Omega**, defined in §3.5 — becomes the root of the integrity chain and the reference point against which all future structural evolution is measured.
 
 Omega is **structurally immutable at runtime**: no external instruction — including an instruction from the Operator — may modify the entity's structural configuration directly during an active session. The structural configuration — persona, skills, consolidated semantic knowledge, Operator Bound, and genesis anchor — is fixed for the duration of the session. Session state — the context window, active memories, and accumulated cycle outputs — evolves normally through the cognitive pipeline and is not subject to this constraint. Structural changes may only be applied by profile-defined internal processes validated by the integrity layer, and only between sessions.
 
@@ -117,7 +117,7 @@ The **Entity Artifact Boundary** defines two operationally distinct scopes withi
 
 ### 3.2 Cognition
 
-Cognition is the processing cycle in which the entity receives a stimulus, generates intent, and produces actions or state writes. It is active only while a valid **session token** exists — the operational credential that authorizes active cognition, issued at the start of each session and revocable at any point. The entity's reasoning is produced by the cognitive engine through the interaction of two inputs: the persona layer, which applies behavioral constraints, and the model, which performs inference. Both inputs are required; the output of the reasoning phase is a single structured intent payload.
+Cognition is the processing cycle in which the entity receives a stimulus, generates intent, and produces actions or state writes. This section defines the atomic unit of cognition, the session boundaries within which it operates, the stimulus and intent model that drives it, and the two special intent types — Evolution Proposals and the Closure Payload — that govern structural evolution and session continuity. Cognition is active only while a valid **session token** exists — the operational credential that authorizes active cognition, issued at the start of each session and revocable at any point. The entity's reasoning is produced by the cognitive engine through the interaction of two inputs: the persona layer, which applies behavioral constraints, and the model, which performs inference. Both inputs are required; the output of the reasoning phase is a single structured intent payload.
 
 A **Cognitive Cycle** is the atomic unit of cognition: stimulus received → context loaded → intent generated → intent dispatched. The cycle is complete when the intent leaves the cognitive engine. What follows — skill execution, state persistence, integrity monitoring — is the consequence of the dispatched intent, handled by the responsible components independently.
 
@@ -147,7 +147,7 @@ Skills that produce irreversible side effects — payments, commands to external
 
 ### 3.4 Integrity
 
-Integrity is the set of architectural mechanisms that ensure the entity's structure and behavior remain consistent with its defined and authorized state.
+Integrity is the set of architectural mechanisms that ensure the entity's structure and behavior remain consistent with its defined and authorized state. This section defines the four integrity mechanisms — the Integrity Document, the Endure Protocol, the Heartbeat Protocol, and the Drift Framework — and the content classes that determine write authority within the Entity Store.
 
 The **Integrity Document** is generated at first activation and contains the cryptographic hash of every file constituting structural content across all components. It is verified at every boot, before every skill execution, and at defined intervals during active operation. Any hash mismatch indicates unauthorized structural modification and triggers an immediate integrity layer response.
 
