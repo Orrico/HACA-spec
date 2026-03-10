@@ -21,7 +21,7 @@ The filesystem is the application.
 
 ## 1. Overview and "Living off the Land"
 
-FCP implements HACA's four-layer architecture (see `HACA-v1.0-Internet-Draft.md`) using filesystem primitives:
+FCP implements HACA's four-layer architecture (see [HACA-Arch](../../spec/HACA-Arch-1.0.0.md)) using filesystem primitives:
 
 | HACA Layer | FCP Implementation |
 |---|---|
@@ -586,8 +586,8 @@ This Internet Draft is published for community review prior to formal IETF submi
 
 ## Normative References (Full Spec)
 
-- `../haca-spec/HACA-v1.0-Internet-Draft.md` — HACA architecture overview (start here)
-- `FCP-v1.0-RFC-Draft.md` (draft-orrico-fcp-13) — Complete FCP specification with normative schemas
-- `../haca-spec/HACA-Core-v1.0-RFC-Draft.md` (draft-orrico-haca-core-03) — Formal axioms and compliance tests
-- `../haca-spec/HACA-Arch-v1.0-RFC-Draft.md` (draft-orrico-haca-arch-03) — Abstract architecture and trust model
-- `../haca-spec/HACA-Security-v1.0-RFC-Draft.md` (draft-orrico-haca-security-03) — Byzantine host model and cryptographic auditability
+- [HACA-Arch](../../spec/HACA-Arch-1.0.0.md) — Root architecture overview (start here)
+- [FCP Spec](FCP-1.0.0.md) — Complete FCP specification
+- [HACA-Core](../../spec/HACA-Core-1.0.0.md) — Formal axioms and compliance tests
+- [HACA-Arch](../../spec/HACA-Arch-1.0.0.md) — Abstract architecture and trust model
+- *HACA-Security* (Planned) — Byzantine host model and cryptographic auditability

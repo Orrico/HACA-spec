@@ -1,5 +1,7 @@
 # Host-Agnostic Cognitive Architecture (HACA) v1.0
 
+Official Repository: [https://github.com/HACA-org/HACA](https://github.com/HACA-org/HACA)
+
 The **Host-Agnostic Cognitive Architecture (HACA) v1.0** is a specification by Jonas Orrico that defines a minimal, technology-neutral framework for host-embedded cognitive systems — AI agents that reason, remember, execute actions, and maintain their own structural integrity across sessions. Its design draws on converging insights from cognitive science, information theory, biology, and the founding literature of AI.
 
 HACA formalizes five architectural components — a Cognitive Processing Engine, Memory Interface Layer, Execution Layer, System Integrity Layer, and optional Cognitive Mesh Interface — bound together by the **Principle of Cognitive Integrity**: compliant systems must preserve structural coherence and recoverability of their cognitive state. This principle, stated in clean RFC-style prose, is in fact a distillation of ideas stretching from Turing's universal computation through Shannon's entropy, Maturana and Varela's autopoiesis, Friston's free energy principle, and Levin's bioelectric cognition.
@@ -12,20 +14,20 @@ HACA does not specify inference models, storage technologies, or implementation 
 
 | Document | Version | Description |
 |----------|---------|-------------|
-| [HACA-Arch](HACA/HACA-Arch-1.0.0.md) | 1.0.0 | Root architecture — structural topology, trust model, compliance levels, Cognitive Profiles |
-| [HACA-Core](HACA/HACA-Core-1.0.0.md) | 1.0.0 | Zero-Autonomy Cognitive Profile — axioms, memory model, drift detection, Endure Protocol |
-| [HACA-Evolve](HACA/HACA-Evolve-1.0.0.md) | 1.0.0 | Supervised-Autonomy Cognitive Profile — identity growth, implicit authorization, relational memory |
-| [HACA-CMI](HACA/HACA-CMI-1.0.0.md) | 1.0.0 | Cognitive Mesh Interface — multi-system coordination, federated memory exchange, mesh compliance |
+| [HACA-Arch](spec/HACA-Arch-1.0.0.md) | 1.0.0 | Root architecture — structural topology, trust model, compliance levels, Cognitive Profiles |
+| [HACA-Core](spec/HACA-Core-1.0.0.md) | 1.0.0 | Zero-Autonomy Cognitive Profile — axioms, memory model, drift detection, Endure Protocol |
+| [HACA-Evolve](spec/HACA-Evolve-1.0.0.md) | 1.0.0 | Supervised-Autonomy Cognitive Profile — identity growth, implicit authorization, relational memory |
+| [HACA-CMI](spec/HACA-CMI-1.0.0.md) | 1.0.0 | Cognitive Mesh Interface — multi-system coordination, federated memory exchange, mesh compliance |
 | *HACA-Security* | *Planned* | Security extension — Byzantine host model, cryptographic auditability, threat model |
 
 ### RFC-Style Drafts (IETF format)
 
 | RFC Draft | Status |
 |-----------|--------|
-| [draft-orrico-haca-arch-01](HACA/rfc/draft-orrico-haca-arch-01.md) | Informational |
-| [draft-orrico-haca-core-01](HACA/rfc/draft-orrico-haca-core-01.md) | Informational |
-| [draft-orrico-haca-evolve-01](HACA/rfc/draft-orrico-haca-evolve-01.md) | Informational |
-| [draft-orrico-haca-cmi-01](HACA/rfc/draft-orrico-haca-cmi-01.md) | Informational |
+| [draft-orrico-haca-arch-01](spec/rfc/draft-orrico-haca-arch-01.md) | Informational |
+| [draft-orrico-haca-core-01](spec/rfc/draft-orrico-haca-core-01.md) | Informational |
+| [draft-orrico-haca-evolve-01](spec/rfc/draft-orrico-haca-evolve-01.md) | Informational |
+| [draft-orrico-haca-cmi-01](spec/rfc/draft-orrico-haca-cmi-01.md) | Informational |
 
 The Internet Draft is the entry point — written for developers in plain prose. The RFC-style drafts are the normative documents: precise, dense, and machine-verifiable.
 

@@ -4,7 +4,7 @@ The Host-Agnostic Cognitive Architecture (HACA) project uses different licenses 
 
 ## 1. Specification License
 
-All documentation and specification files located in the `/HACA` directory are licensed under the **Creative Commons Attribution 4.0 International (CC BY 4.0)**.
+All documentation and specification files located in the `/spec` directory are licensed under the **Creative Commons Attribution 4.0 International (CC BY 4.0)**.
 
 You are free to:
 - **Share** — copy and redistribute the material in any medium or format.

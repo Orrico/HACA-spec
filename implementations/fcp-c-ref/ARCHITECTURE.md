@@ -2,7 +2,7 @@
 
 This document explains how FCP-Ref works. It assumes you've read the [Quick Start](QUICKSTART.md) and want to understand the internals.
 
-For the formal specifications, see [fcp-spec/](../fcp-spec/) and [haca-spec/](../haca-spec/).
+For the formal specifications, see [fcp-c-spec/](../fcp-c-spec/) and [HACA-Arch](../../spec/HACA-Arch-1.0.0.md).
 
 ---
 
@@ -240,7 +240,7 @@ FCP-Ref implements the **Identity Drift Invariant** (HACA-Core Axiom VIII) using
 This tier is implemented in `skills/lib/drift.sh`. It computes the **Unigram Normalized Compression Distance (NCD)** using POSIX tools (`tr`, `sort`, `uniq`, `gzip`).
 
 - **Logic**: It extracts the sorted unique word set (unigrams) from both the anchor and the current response before compression. This ensures the metric is sensitive to vocabulary shifts rather than length or repetition.
-- **Formula**: See [HACA-Core §4.1](file:///home/estupendo/code/haca-fcp/haca-spec/HACA-Core-v1.0-RFC-Draft.md#L339) for the normative math.
+- **Formula**: See [HACA-Core §4.1](../../spec/HACA-Core-1.0.0.md) for the normative math.
 - **Performance**: Near-zero CPU cost. Checks every boot.
 
 ### Tier 2 — Semantic Oracle (Deep Path)
@@ -271,10 +271,10 @@ After this, every subsequent boot loads the operator binding and self-knowledge 
 
 FCP-Ref implements two formal specifications:
 
-**[FCP (Filesystem Cognitive Platform)](../fcp-spec/FCP-v1.0-RFC-Draft.md)**
+**[FCP (Filesystem Cognitive Platform)](../fcp-c-spec/)**
 The concrete implementation spec. Defines the directory topology, ACP wire format, boot phases, memory paging, drift measurement, and skill invocation protocol.
 
-**[HACA (Host-Agnostic Cognitive Architecture)](../haca-spec/HACA-Arch-v1.0-RFC-Draft.md)**
+**[HACA (Host-Agnostic Cognitive Architecture)](../../spec/HACA-Arch-1.0.0.md)**
 The abstract architecture. Defines the eight compliance axioms, trust model, component topology, and the relationships between CPE, MIL, EL, and SIL. FCP is a conforming implementation of HACA-Core.
 
 The specs are written in RFC style. They're dense — start with FCP if you want the concrete picture, start with HACA-Arch if you want the abstract model.

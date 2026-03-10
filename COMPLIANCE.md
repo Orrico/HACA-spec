@@ -7,7 +7,7 @@ This document defines what it means for a system to be **HACA Compliant** and ho
 HACA defines three levels of compliance:
 
 ### 1.1 Architectural Compliance (HACA-Arch)
-The system satisfies all mandatory structural invariants defined in [HACA-Arch](HACA/HACA-Arch-1.0.0.md). This includes:
+The system satisfies all mandatory structural invariants defined in [HACA-Arch](spec/HACA-Arch-1.0.0.md). This includes:
 - Component separation (CPE, MIL, EL, SIL).
 - Verifiable integrity chain.
 - Deterministic boot sequence.
