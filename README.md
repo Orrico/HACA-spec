@@ -16,6 +16,7 @@ HACA does not specify inference models, storage technologies, or implementation 
 | [HACA-Core](HACA/HACA-Core-1.0.0.md) | 1.0.0 | Zero-Autonomy Cognitive Profile — axioms, memory model, drift detection, Endure Protocol |
 | [HACA-Evolve](HACA/HACA-Evolve-1.0.0.md) | 1.0.0 | Supervised-Autonomy Cognitive Profile — identity growth, implicit authorization, relational memory |
 | [HACA-CMI](HACA/HACA-CMI-1.0.0.md) | 1.0.0 | Cognitive Mesh Interface — multi-system coordination, federated memory exchange, mesh compliance |
+| *HACA-Security* | *Planned* | Security extension — Byzantine host model, cryptographic auditability, threat model |
 
 ### RFC-Style Drafts (IETF format)
 
