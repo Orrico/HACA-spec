@@ -486,11 +486,11 @@ All terms defined in this specification, in alphabetical order.
 
 **CPE (Cognitive Processing Engine)** — the primary processing unit and the boundary at which the language model is integrated into the entity's operational scope. Holds the active context window; retains no persistent state beyond the active session.
 
-**Cycle Chain** — a sequence of consecutive Cognitive Cycles produced by the HACA integration layer when a model generates a multi-step reasoning output. Each cycle is individually atomic and auditable. Between cycles, the CPE performs a preemption check: Operator direct input suspends the chain and is processed first; all other stimuli are queued; SIL signals take effect regardless of chain state. A suspended chain resumes after the Operator's cycle completes, or is discarded if the Operator issued a cancellation. Completed cycles are unaffected by suspension or discard.
-
 **Crash Recovery** — the procedure for resuming after an uncontrolled host interruption. The entity resumes from the last Sleep Cycle boundary; any session progress not yet consolidated is discarded.
 
 **Critical** — an integrity state produced by a Vital Check indicating that the detected anomaly exceeds the integrity layer's correction capacity, or involves the cognitive engine or the integrity layer itself. The session token is immediately revoked and the integrity layer escalates to the Operator via the Operator Channel.
+
+**Cycle Chain** — a sequence of consecutive Cognitive Cycles produced by the HACA integration layer when a model generates a multi-step reasoning output. Each cycle is individually atomic and auditable. Between cycles, the CPE performs a preemption check: Operator direct input suspends the chain and is processed first; all other stimuli are queued; SIL signals take effect regardless of chain state. A suspended chain resumes after the Operator's cycle completes, or is discarded if the Operator issued a cancellation. Completed cycles are unaffected by suspension or discard.
 
 **Degraded** — an integrity state produced by a Vital Check indicating a localized anomaly that the integrity layer can independently verify from outside the affected component. The integrity layer issues a corrective signal to the affected component; if re-verification after correction fails, the condition escalates to Critical.
 
@@ -577,9 +577,9 @@ All terms defined in this specification, in alphabetical order.
 
 **Reciprocal SIL Watchdog** — a local monitor maintained by each component that detects when the SIL has stopped responding beyond a defined threshold, or when the SIL's responses are inconsistent with expected integrity criteria. Either condition triggers direct escalation to the Operator via the Operator Channel, bypassing the SIL.
 
-**Semantic Drift** — accumulated memory content has diverged from the entity's Semantic Probes. Detected by the integrity layer during the Sleep Cycle by comparing Memory Store content against the Semantic Probes via an implementation-defined comparison mechanism. Under HACA-Core, any divergence escalates directly to Critical. Under HACA-Evolve, covered divergence proceeds to the evolutionary protocol; uncovered divergence is an anomaly.
-
 **Semantic Digest** — a running aggregate metric over the entity's accumulated memory content, maintained by the integrity layer and updated incrementally at each Sleep Cycle. Only the session's newly consolidated content contributes to each update; the full Memory Store is not rescanned. Stored as integrity content and covered by the Integrity Document. Used as the basis for Semantic Drift detection in place of full Memory Store scanning — resolving the O(n) cost of full comparison as memory accumulates.
+
+**Semantic Drift** — accumulated memory content has diverged from the entity's Semantic Probes. Detected by the integrity layer during the Sleep Cycle by comparing Memory Store content against the Semantic Probes via an implementation-defined comparison mechanism. Under HACA-Core, any divergence escalates directly to Critical. Under HACA-Evolve, covered divergence proceeds to the evolutionary protocol; uncovered divergence is an anomaly.
 
 **Semantic Probes** — the entity's semantic drift reference baseline: a set of semantic anchors derived from structural content and maintained by the integrity layer. The SIL uses semantic probes as reference anchors to measure divergence during the Sleep Cycle via an implementation-defined comparison mechanism. Initialized from the Imprint Record at first activation; updated only through authorized structural evolution.
 
@@ -595,9 +595,9 @@ All terms defined in this specification, in alphabetical order.
 
 **SIL (System Integrity Layer)** — the entity's integrity monitoring and enforcement layer, and its highest internal authority. Sole custodian of the Integrity Document, sole issuer of the session token, and owner of the Endure Protocol. Issues corrective signals to components in Degraded conditions; independently re-verifies resolution before clearing the Degraded state; escalates to the Operator via the Operator Channel when correction authority is exceeded or re-verification fails.
 
-**Skill Index** — a structural artefact persisted in the Entity Store and covered by the Integrity Document. Contains the set of skills authorized for execution. Updated exclusively through the Endure Protocol. Verified by the SIL at boot; loaded as part of the Boot Manifest. Constitutes the first gate of the two-gate execution authorization: a skill absent from the index is rejected — the EXEC signals the SIL and logs the rejection without proceeding to the second gate. Hash mismatch at boot or during the Heartbeat Protocol triggers immediate escalation — the SIL does not modify the index during an active session.
-
 **Skill** — a discrete, self-contained executable capability unit within the Entity Store, with a manifest declaring its identity, required permissions, dependencies, and execution mode (synchronous or background).
+
+**Skill Index** — a structural artefact persisted in the Entity Store and covered by the Integrity Document. Contains the set of skills authorized for execution. Updated exclusively through the Endure Protocol. Verified by the SIL at boot; loaded as part of the Boot Manifest. Constitutes the first gate of the two-gate execution authorization: a skill absent from the index is rejected — the EXEC signals the SIL and logs the rejection without proceeding to the second gate. Hash mismatch at boot or during the Heartbeat Protocol triggers immediate escalation — the SIL does not modify the index during an active session.
 
 **Skill Result** — the structured record produced by the EXEC upon skill execution. Contains the skill identity, execution mode, timestamp, and output status. Background skills produce an initial Skill Result with `status=running` immediately upon dispatch; a final Skill Result with the terminal status is produced when execution completes.
 

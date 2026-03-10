@@ -275,7 +275,7 @@ A HACA-Evolve-compliant implementation MUST satisfy all requirements in this sec
 - [ ] Operator Channel delivery mechanism provides confirmation signal and is verified at boot.
 - [ ] Passive Distress Beacon acknowledgement requires resolution verification by the SIL.
 
-**CMI (when present)**
+**CMI (if present)**
 - [ ] Entity joins only channels owned by verified, trusted nodes recorded in the structural baseline.
 - [ ] Trusted node list updated exclusively via Endure Protocol with explicit Operator authorization.
 - [ ] Private channels opened by the entity admit only verified, trusted nodes.
