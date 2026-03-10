@@ -28,7 +28,7 @@ An entity that does not activate the CMI extension does not generate a Node Iden
 
 ## 3. Mesh Channel
 
-The **Mesh Channel** is the fundamental unit of coordination: a purposive, time-bounded space created by a **Host** entity to accomplish a declared task. A Mesh Channel has exactly one Host — the entity that created it — and zero or more enrolled participants. An entity may participate in multiple Mesh Channels simultaneously; each channel is independent — contributions and messages do not cross channel boundaries, which must be reinforced by the implementation. ?revisar?
+The **Mesh Channel** is the fundamental unit of coordination: a purposive, time-bounded space created by a **Host** entity to accomplish a declared task. A Mesh Channel has exactly one Host — the entity that created it — and zero or more enrolled participants. An entity may participate in multiple Mesh Channels simultaneously. Channels are logically and cryptographically isolated; the implementation must ensure that contributions, messages, and internal session context do not cross channel boundaries. This isolation is a foundational requirement for Cognitive Sovereignty.
 
 ### 3.1 Task
 
@@ -51,7 +51,7 @@ Three roles govern participation in a Mesh Channel:
 - **Peer** — an active participant. May send stimuli, contribute to the Blackboard, and receive all channel activity.
 - **Observer** — a passive participant. Receives all channel activity as stimuli but may not contribute to the Blackboard or send stimuli to other participants.
 
-The Host may change a participant's role during the Active state. Role changes take effect immediately and are logged. ?revisar?
+The Host may change a participant's role during the Active state. Role changes are broadcast as signed control signals, take effect upon receipt, and must be logged by all participants in their respective Integrity Logs to enable subsequent audit and enforcement.
 
 ### 3.4 Lifecycle
 
