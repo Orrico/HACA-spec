@@ -48,7 +48,7 @@ The memory model distinguishes **session memory** (ephemeral context), **persist
 
 A **Cognitive Profile** selects the complete set of axioms, memory policies, and identity lifecycle contracts for a deployment. Profiles are mutually exclusive. HACA v1.0 defines two: **Zero-Autonomy** (HACA-Core) for independent industrial agents, and **Supervised-Autonomy** (HACA-Evolve) for Operator-bound relationship-driven systems.
 
-**Notation convention:** Cognitive Profiles are abbreviated by their initial letter when used in shorthand — `HACA-C` for HACA-Core, `HACA-E` for HACA-Evolve. Future profiles follow the same pattern (`HACA-N`, etc.). Extensions (HACA-Arch, HACA-Security) are always written in full; they are not profiles and do not participate in this convention.
+**Notation convention:** Cognitive Profiles are abbreviated by their initial letter when used in shorthand — `HACA-C` for HACA-Core, `HACA-E` for HACA-Evolve. Future profiles follow the same pattern (`HACA-N`, etc.). The base architecture (HACA-Arch) and extensions (HACA-Security, HACA-CMI) are always written in full; they are not profiles and do not participate in this shorthand convention.
 
 ---
 
