@@ -44,7 +44,7 @@ Before submitting a pull request:
    - Architectural (affects invariants or protocol structure)
 3. If architectural, open an issue first for discussion.
 
-Major changes SHOULD begin as RFC drafts under `/spec/drafts/`.
+Major changes SHOULD begin as RFC drafts under `/HACA/rfc/`.
 
 ---
 
@@ -112,7 +112,7 @@ An RFC must include:
 - Compatibility analysis
 - Security considerations
 
-RFC drafts should be placed in `/spec/drafts/`.
+RFC drafts should be placed in `/HACA/rfc/`.
 
 Approval requires review and explicit acceptance by the Specification Owner.
 

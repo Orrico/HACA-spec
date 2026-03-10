@@ -105,7 +105,7 @@ Non-normative edits (grammar, formatting) may be merged without formal review cy
 
 ## 7. RFC Process
 
-Major architectural changes SHOULD begin as RFC documents inside the `/spec/drafts/` directory.
+Major architectural changes SHOULD begin as RFC documents inside the `/HACA/rfc/` directory.
 
 An RFC must include:
 

@@ -61,7 +61,16 @@ A **Cognitive Profile** selects the complete set of axioms, memory policies, and
 
 ---
 
+---
+
+## Project Governance and Compliance
+
+- **[COMPLIANCE.md](COMPLIANCE.md)** — Guide on how to claim and verify HACA compliance.
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — Guidelines for contributing to the specification and reference implementation.
+- **[GOVERNANCE.md](GOVERNANCE.md)** — Decision-making process and specification lifecycle.
+
 ## License
 
-Specifications: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
-Reference implementation: [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0)
+Specifications: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)  
+Reference implementation: [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0)  
+See **[LICENSE](LICENSE)** for full details.
