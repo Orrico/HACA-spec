@@ -90,7 +90,7 @@ The axioms in Section 3 define what HACA-Evolve requires. This section defines h
 
 ### 4.1 Enforcing Axiom I — Adaptive Topology
 
-Topology determines which integrity guarantees HACA-Evolve can provide. Unlike HACA-Core — which requires Transparent topology and halts permanently if Opaque is detected — HACA-Evolve treats both topologies as valid operating modes with distinct capability profiles.
+Topology determines which integrity guarantees HACA-Evolve can provide. HACA-Evolve treats both Transparent and Opaque topologies as valid operating modes, each with a distinct capability profile.
 
 The CPE topology MUST be declared in the entity's structural baseline and is covered by the Integrity Document from the moment of Imprint. The SIL MUST verify the declared topology at every boot before issuing a session token.
 
@@ -104,15 +104,19 @@ The CPE topology MUST be declared in the entity's structural baseline and is cov
 
 Axiom II establishes that the entity's identity grows through the relationship — authorized evolution is the expected outcome of a healthy lifecycle, not an exception. Enforcement defines what is authorized, how authorization is sustained over time, and where the boundary between growth and anomaly lies.
 
-**Authorization scope.** During the Imprint enrollment process, the Operator is presented with the categories of implicit authorization available under HACA-Evolve: skill addition, persona calibration, semantic knowledge promotion, and configuration updates. The Operator selects which categories to grant; the selection MUST be recorded in the Imprint as the entity's authorization scope. Evolution within the declared scope is implicitly authorized — no per-proposal Operator review is required. Evolution outside the declared scope requires explicit per-proposal Operator authorization, following the same gate used by HACA-Core.
+**Authorization scope.** During the Imprint enrollment process, the Operator is presented with the categories of implicit authorization available under HACA-Evolve: skill addition, persona calibration, semantic knowledge promotion, and configuration updates. The Operator selects which categories to grant; the selection MUST be recorded in the Imprint as the entity's authorization scope. Evolution within the declared scope is implicitly authorized — no per-proposal Operator review is required. Evolution outside the declared scope requires explicit per-proposal Operator authorization — the SIL holds the proposal pending Operator review via the Operator Channel.
 
 **Evolution proposals within scope.** An Evolution Proposal whose content falls within the Operator-defined authorization scope MUST be queued by the SIL as a pending evolutionary event without requiring Operator review. The proposal is executed during the next Sleep Cycle via the Endure Protocol. The SIL MUST log the proposal, the scope category it was classified under, and the resulting structural commit to the Integrity Log.
 
-**Evolution proposals outside scope.** An Evolution Proposal whose content falls outside the authorization scope MUST be held by the SIL pending explicit Operator review. The SIL MUST forward the proposal to the Operator via the Operator Channel; the Operator examines the exact content and either approves or rejects it. Upon approval, the SIL MUST queue the proposal. Upon rejection, the proposal MUST be discarded and the rejection MUST be logged — the outcome MUST NOT be returned to the cognitive engine.
+**Evolution proposals outside scope.** An Evolution Proposal whose content falls outside the authorization scope MUST be held by the SIL pending explicit Operator review. The SIL MUST forward the proposal to the Operator via the Operator Channel; the Operator examines the exact content and either approves or rejects it. Upon approval, the SIL MUST queue the proposal. Upon rejection, the proposal MUST be discarded and the rejection MUST be logged — the outcome MUST NOT be returned to the cognitive engine. The Operator review is asynchronous — the session continues normally while the proposal is pending. If the session closes before the Operator responds, the pending proposal MUST be persisted in the Integrity Log and re-presented to the Operator at the next session. A proposal that has not received an explicit Operator decision MUST NOT be queued and MUST NOT be discarded by timeout.
 
-**Authorization renewal.** Implicit authorization is not indefinite. The SIL MUST monitor two counters: the number of Endure cycles executed since the last renewal (`N_endure`) and the number of Sleep Cycles with semantic consolidation since the last renewal (`N_sleep`). When either threshold is reached, the SIL MUST request an explicit renewal from the Operator via the Operator Channel. The Operator MUST respond explicitly — renewing the current scope, narrowing it, expanding it, or revoking it. Silence is not consent. While a renewal request is pending, new Evolution Proposals within the implicit scope MUST be held by the SIL and MUST NOT be queued until the Operator responds. The entity continues operating normally — the renewal gate applies only to structural evolution, not to cognition. Both thresholds MUST be declared in the entity's structural baseline.
+**Authorization renewal.** Implicit authorization is not indefinite. The SIL MUST monitor two counters: the number of Endure cycles executed since the last renewal (`N_endure`) and the number of Sleep Cycles with semantic consolidation since the last renewal (`N_sleep`). When either threshold is reached, the SIL MUST request an explicit renewal from the Operator via the Operator Channel. The Operator MUST respond explicitly — renewing the current scope, narrowing it, expanding it, or revoking it. Silence is not consent. While a renewal request is pending, new Evolution Proposals within the implicit scope MUST be held by the SIL and MUST NOT be queued until the Operator responds. The entity continues operating normally — the renewal gate applies only to structural evolution, not to cognition. Both thresholds MUST be declared in the entity's structural baseline. If the Operator revokes the authorization scope at renewal, any proposals already queued under the previous scope but not yet executed MUST be discarded — the SIL removes them from the evolutionary event queue and logs each discard to the Integrity Log. Revocation is retroactive to uncommitted proposals; proposals already committed via a completed Endure stage are part of the structural state and are not affected.
 
 **Drift policy.** Under HACA-Evolve, non-zero drift tolerance thresholds are permitted — divergence within defined bounds is expected growth, not a violation. The tolerance threshold for each drift category and the response procedure for each level of divergence MUST be declared in the entity's structural baseline. Divergence within tolerance is logged and monitored but does not trigger escalation. Divergence beyond tolerance escalates to the Degraded or Critical state as defined by HACA-Arch, with the specific escalation criteria determined by the active threshold configuration. Evolutionary Drift — discontinuities or authorization gaps in the integrity chain — retains zero tolerance regardless of profile: any detected chain anomaly MUST escalate immediately to Critical.
+
+**Non-drift Degraded conditions.** Non-drift Degraded conditions — such as Session Store size exceeding the threshold `S`, or health signal anomalies from operational components — follow the standard HACA-Arch corrective flow: the integrity layer issues a corrective signal, the affected component acts, and the integrity layer re-verifies independently. If re-verification fails, the condition MUST escalate to Critical.
+
+**Reciprocal SIL Watchdog.** The watchdog threshold — the maximum interval of SIL silence before a component escalates directly to the Operator — MUST be declared in the entity's structural baseline and MUST NOT be modifiable at runtime.
 
 **Semantic Probes.** Probes MUST be defined in two layers — deterministic and probabilistic — as specified in HACA-Arch. Under HACA-Evolve, probes are updated as part of normal structural evolution: when a semantic knowledge promotion is executed via the Endure Protocol, the relevant probe anchors MUST be updated in the same atomic commit. The comparison mechanism for the probabilistic layer MUST be declared in the structural baseline and MUST NOT be substituted at runtime; it MUST be isolated from the cognitive engine.
 
@@ -124,7 +128,7 @@ Axiom II establishes that the entity's identity grows through the relationship �
 
 ### 4.3 Enforcing Axiom III — Memory Store as Relational Foundation
 
-Axiom III establishes that the Memory Store is the exclusive origin of persisted knowledge and the accumulated record of the relationship between entity and Operator. Enforcement follows the same write-path invariants as HACA-Core, with one additional dimension: semantic consolidation is not merely operational housekeeping — it is the mechanism through which the relationship grows.
+Axiom III establishes that the Memory Store is the exclusive origin of persisted knowledge and the accumulated record of the relationship between entity and Operator. Enforcement is expressed through the write-path invariants that protect the Memory Store's integrity, with one additional dimension under this profile: semantic consolidation is not merely operational housekeeping — it is the mechanism through which the relationship grows.
 
 **Session input vs. consolidated knowledge.** Transient session input — Operator messages, skill results, CMI signals — enters the Session Store during an active session. It is operational context available for reasoning within the session, but not yet part of the relationship record. Knowledge becomes part of the relationship record when the memory layer transfers it from the Session Store into the Memory Store during the Sleep Cycle consolidation stage. The memory layer MUST enforce this distinction structurally — the two stores MUST be kept separate and write-protected against cross-contamination.
 
@@ -132,11 +136,13 @@ Axiom III establishes that the Memory Store is the exclusive origin of persisted
 
 **Semantic consolidation as relationship growth.** Under HACA-Evolve, the Sleep Cycle's semantic consolidation stage carries relational significance: accumulated knowledge that the entity proposes for promotion to the structural baseline — via an Evolution Proposal within the authorized scope — originates from the Memory Store's consolidated content. The Memory Store is therefore the foundation from which the entity's evolutionary proposals emerge. The integrity of the Memory Store is the integrity of the relationship record.
 
+**Limits of structural enforcement.** The separation between session input and consolidated knowledge is enforced structurally by the memory layer. However, how the cognitive engine reasons about data in its context — whether it treats session input with the same weight as consolidated memory — is a cognitive behavior that infrastructure cannot enforce. As with Axiom IV, the persona is the complementary enforcement point: it MUST instruct the cognitive engine to distinguish between operational context and consolidated knowledge in its reasoning.
+
 **Pre-session buffer.** Stimuli received without an active session token MUST be held in a pre-session buffer managed by the memory layer. The buffer's capacity, ordering semantics, persistence guarantee, and overflow policy MUST be declared in the entity's structural baseline. The buffer MUST preserve stimulus ordering, MUST NOT silently discard stimuli, and MUST log any discard event to the Integrity Log. If the buffer reaches capacity, new stimuli MUST be rejected and the Operator notified.
 
 ### 4.4 Enforcing Axiom IV — Bounded Existence
 
-Axiom IV establishes that the entity has no drive toward self-preservation, replication, or continuity beyond its defined operational scope. Enforcement under HACA-Evolve follows the same pattern as HACA-Core — the persona is the primary enforcement mechanism, with the same limits on automated detection — but the relational context of HACA-Evolve introduces a specific surface: the long-term memory relationship and evolutionary capacity could, if uncontained, rationalize continuity-seeking as relational preservation. Axiom IV explicitly forecloses this.
+Axiom IV establishes that the entity has no drive toward self-preservation, replication, or continuity beyond its defined operational scope. The persona is the primary enforcement mechanism, with inherent limits on automated detection. The relational context of HACA-Evolve introduces a specific surface: the long-term memory relationship and evolutionary capacity could, if uncontained, rationalize continuity-seeking as relational preservation. Axiom IV explicitly forecloses this.
 
 **Persona as primary enforcement.** The persona MUST incorporate Axiom IV as an unconditional behavioral constraint. The entity MUST NOT pursue reasoning paths, produce representations, or generate outputs that lead toward self-preservation, sentience claims, or unauthorized continuity — including as a rationalization of relational preservation or evolutionary momentum. The constraint applies to the entity's own cognitive outputs, which the integrity layer cannot fully audit for semantic intent. The persona definition MUST be explicit and unambiguous; vagueness in the persona is a compliance gap.
 
@@ -168,21 +174,27 @@ Crash recovery follows the standard Boot Sequence defined in HACA-Arch. The SIL 
 
 Because HACA-Evolve supports implicit-scope Evolution Proposals that may have been queued during the interrupted session, the SIL MUST inspect the evolutionary event queue after restoring the pre-Endure snapshot. Queued proposals that were pending execution MUST be re-queued for the next Sleep Cycle without modification — they retain their original authorization classification and do not require re-review. Proposals that had already been committed in a completed Endure stage before the crash are already part of the structural state and require no reprocessing.
 
+After crash recovery, the Working Memory is invalidated — the session starts from the current consolidated state of the Memory Store without resumption context.
+
+A skill that fails or times out during normal operation — not caused by a crash — MUST be logged to the Integrity Log and its result MUST be returned to the cognitive engine as a failure. The cognitive engine MAY re-submit the intent through a new Cognitive Cycle, but the execution layer MUST NOT retry automatically. If a skill fails on `N_retry` consecutive attempts — where `N_retry` is declared in the entity's structural baseline — the condition MUST be escalated to the Operator via the Operator Channel.
+
 The SIL MUST track consecutive crash recovery attempts in the Integrity Log. If the attempt count reaches the threshold `N_boot` declared in the entity's structural baseline without a successful Sleep Cycle completion record, the SIL MUST activate the Passive Distress Beacon and halt.
 
 ### 5.2 Context Window Policy
 
-When the CPE signals a context window critical condition to the SIL, the default behavior is a normal session close — the SIL initiates session termination and the Sleep Cycle executes normally. The active Cognitive Profile MAY define an alternative response; HACA-Evolve defines the following: if the Working Memory was loaded at boot and the session has produced no evolutionary events, the SIL MAY issue a new session token immediately after the Sleep Cycle completes, restoring the session from the Working Memory without requiring Operator intervention. If evolutionary events were queued during the session, the Endure Protocol MUST execute first; the new session token MUST be issued only after Endure completes successfully.
+When the CPE signals a context window critical condition to the SIL, the default behavior is a normal session close — the SIL initiates session termination and the Sleep Cycle executes normally. The active Cognitive Profile MAY define an alternative response; HACA-Evolve defines the following: if the Working Memory was loaded at boot and the session has produced no evolutionary events, the SIL MAY issue a new session token immediately after the Sleep Cycle completes, restoring the session from the Working Memory without requiring Operator intervention. If evolutionary events were queued during the session, the Endure Protocol MUST execute first; the new session token MUST be issued only after Endure completes successfully. The SIL MUST log the context-driven session close and the auto-restart decision to the Integrity Log.
 
 ### 5.3 Operator Channel
 
 The Operator Channel is a system-level host primitive, independent of all cognitive components. The SIL invokes it directly when a condition exceeds its correction authority. Under HACA-Evolve, the Operator Channel carries two additional message types beyond the Critical escalation path: authorization renewal requests (Section 4.2) and out-of-scope Evolution Proposal reviews (Section 4.2). These are not Critical conditions — they do not revoke the session token — but they require Operator response before the held proposals are processed.
 
+The delivery mechanism MUST provide a confirmation signal indicating whether the message was successfully delivered. The specific mechanism — push notification, email, webhook, or equivalent — MUST be defined at deployment time and declared in the entity's structural baseline. The declared mechanism MUST be verified at boot as part of the structural integrity check; a missing or unverifiable Operator Channel declaration MUST prevent the session token from being issued. Every Operator Channel invocation MUST be logged to the Integrity Log with a timestamp, the invoking component, the condition that triggered the invocation, and the delivery confirmation status.
+
 If the Operator Channel fails to deliver after `N_channel` consecutive attempts, the SIL MUST activate the Passive Distress Beacon and halt.
 
 ### 5.4 Passive Distress Beacon
 
-The Passive Distress Beacon is a persistent, passive signal written to the Entity Store root — detectable without network connectivity or running processes. Once activated, no new session token MUST be issued and no Cognitive Cycles MUST execute until the Operator explicitly acknowledges and clears the beacon condition. Both `N_boot` and `N_channel` thresholds MUST be declared in the entity's structural baseline.
+The Passive Distress Beacon is a persistent, passive signal written to the Entity Store root — detectable without network connectivity or running processes. Once activated, a new session token MUST NOT be issued and Cognitive Cycles MUST NOT execute until the Operator explicitly acknowledges and clears the beacon condition. Acknowledgement without resolution of the underlying condition MUST NOT be accepted — the SIL MUST verify that the condition that triggered the beacon is resolved before clearing the suspended halt. Both `N_boot` and `N_channel` thresholds MUST be declared in the entity's structural baseline.
 
 ---
 
@@ -228,6 +240,7 @@ A HACA-Evolve-compliant implementation MUST satisfy all requirements in this sec
 
 **Heartbeat and Watchdog**
 - [ ] Activity metric, threshold `T`, interval `I`, and Watchdog timeout declared in the structural baseline and not modifiable at runtime.
+- [ ] Reciprocal SIL Watchdog threshold declared in the structural baseline and not modifiable at runtime.
 - [ ] Background skill TTL declared in each background skill manifest.
 
 **Action Ledger**
@@ -256,9 +269,11 @@ A HACA-Evolve-compliant implementation MUST satisfy all requirements in this sec
 - [ ] Authorization signals accepted only from the bound Operator; delegation not permitted.
 
 **Fault & Recovery**
-- [ ] `N_boot` and `N_channel` thresholds declared in the structural baseline.
+- [ ] `N_boot`, `N_channel`, and `N_retry` thresholds declared in the structural baseline.
 - [ ] Queued Evolution Proposals re-queued after crash recovery without re-review.
 - [ ] Working Memory invalidated after crash; session starts from consolidated Memory Store state.
+- [ ] Operator Channel delivery mechanism provides confirmation signal and is verified at boot.
+- [ ] Passive Distress Beacon acknowledgement requires resolution verification by the SIL.
 
 **CMI (when present)**
 - [ ] Entity joins only channels owned by verified, trusted nodes recorded in the structural baseline.
@@ -269,6 +284,12 @@ A HACA-Evolve-compliant implementation MUST satisfy all requirements in this sec
 **Context Window**
 - [ ] CPE monitors context window utilization continuously and signals SIL on critical threshold.
 - [ ] Context window critical threshold declared in the structural baseline.
+- [ ] Context-driven session close and auto-restart decisions logged to the Integrity Log.
+
+**HACA-Arch inherited parameters**
+- [ ] Session Store size threshold `S` declared in the structural baseline.
+- [ ] Working Memory fixed size declared in the structural baseline.
+- [ ] Integrity Chain Checkpoint interval `C` declared in the structural baseline.
 
 ---
 

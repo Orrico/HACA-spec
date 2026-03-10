@@ -201,24 +201,70 @@ The Cognitive Mesh Interface is an optional architectural extension. A HACA-Core
 
 A deployment is HACA-Core compliant if and only if it satisfies all requirements in this section. Each requirement is non-negotiable — partial compliance is not compliance.
 
-**Topology.** The deployment declares Transparent CPE topology in the structural baseline. The SIL verifies topology at every boot before issuing a session token. A detected Opaque topology causes a permanent halt with no session token issued and no recovery path.
+**Topology**
+- [ ] Transparent CPE topology declared in the structural baseline and covered by the Integrity Document.
+- [ ] Topology verified by the SIL at every boot before issuing a session token.
+- [ ] Detected Opaque topology causes boot abort with no session token issued and no recovery path.
 
-**Structural baseline declarations.** The structural baseline declares, at deployment time and immutably at runtime: the CPE topology; the Heartbeat threshold `T`, interval `I`, and activity metric; the Watchdog timeout per skill execution; the background skill TTL policy; the probabilistic Semantic Probe comparison mechanism; the context window critical threshold; the Operator Channel delivery mechanism; the Passive Distress Beacon mechanism; the boot loop crash threshold `N_boot`; the Operator Channel retry limit `N_channel`; the skill failure escalation threshold `N_retry`; the Reciprocal SIL Watchdog threshold; and the pre-session buffer capacity, ordering, persistence, and overflow policy. In addition to the parameters listed above, all HACA-Arch parameters that the base specification requires to be declared in the structural baseline — including the Session Store size threshold `S`, the Working Memory fixed size, and the Integrity Chain Checkpoint interval `C` — must also be declared at deployment time.
+**Drift policy**
+- [ ] All three drift categories — Semantic, Identity, and Evolutionary — escalate immediately to Critical without passing through the Degraded state.
+- [ ] No tolerance threshold, grace period, or corrective attempt precedes escalation for any drift condition.
+- [ ] Semantic Probes defined in two layers (deterministic and probabilistic); probabilistic comparison mechanism declared in the structural baseline and isolated from the CPE.
 
-**Drift policy.** All three drift categories — Semantic, Identity, and Evolutionary — escalate immediately to Critical without passing through the Degraded state. No tolerance threshold, grace period, or corrective attempt precedes escalation for any drift condition.
+**Heartbeat and Watchdog**
+- [ ] Activity metric, threshold `T`, interval `I`, and Watchdog timeout declared in the structural baseline and not modifiable at runtime.
+- [ ] Reciprocal SIL Watchdog threshold declared in the structural baseline and not modifiable at runtime; no greater than the Heartbeat maximum interval `I`.
+- [ ] Background skill TTL declared in each background skill manifest.
 
-**Integrity Log.** The evolutionary chain is never compacted, archived, or deleted. All routine operational records are retained in full for the lifetime of the deployment. No compaction policy is defined or applied.
+**Action Ledger**
+- [ ] Write-ahead entry created in the Session Store before execution of any skill with irreversible side effects.
+- [ ] Unresolved entries surfaced to the Operator at the next boot before token issuance.
+- [ ] Unresolved entries never re-executed automatically.
 
-**Action Ledger.** Every skill with irreversible side effects is covered by a write-ahead entry in the Session Store before execution. Unresolved entries after a crash are surfaced to the Operator before the next session token is issued and are never re-executed automatically.
+**Integrity Log**
+- [ ] Evolutionary chain never compacted, archived, or deleted.
+- [ ] All routine operational records retained in full for the lifetime of the deployment.
+- [ ] No compaction policy defined or applied.
 
-**Persona.** The persona definition explicitly encodes Axiom IV constraints — prohibiting self-preservation reasoning, sentience claims, replication behavior, and resistance to legitimate Operator instruction — as hard behavioral boundaries, not soft guidelines.
+**Memory Store**
+- [ ] Session Store and Memory Store kept structurally separate and write-protected against cross-contamination.
+- [ ] No component other than the MIL writes mnemonic content to either store.
+- [ ] Pre-session buffer capacity, ordering semantics, persistence guarantee, and overflow policy declared in the structural baseline.
+- [ ] Buffer preserves stimulus ordering; discards logged to the Integrity Log; silent overflow not permitted.
 
-**Evolution Gate.** Every Evolution Proposal is held by the SIL pending explicit Operator approval before being queued. Implicit authorization is never accepted. The outcome of Operator review — approval or rejection — is never returned to the cognitive engine.
+**Bounded Existence**
+- [ ] Persona explicitly encodes Axiom IV constraints — prohibiting self-preservation reasoning, sentience claims, replication behavior, and resistance to legitimate Operator instruction — as hard behavioral boundaries.
+- [ ] Entity does not resist, delay, or circumvent decommission.
 
-**Operator Bound.** A valid Operator Bound must be present in the Entity Store before any session token is issued. An absent or invalid Bound results in permanent inactivity with no session token issued until a valid Bound is established.
+**Evolution Gate**
+- [ ] Every Evolution Proposal held by the SIL pending explicit Operator approval before being queued.
+- [ ] Implicit authorization never accepted.
+- [ ] Outcome of Operator review — approval or rejection — never returned to the cognitive engine.
+- [ ] Pending proposals persisted across sessions; never discarded by timeout.
 
-**Context Window.** When the context window reaches the declared critical threshold, the cognitive engine initiates a session-close signal. The SIL executes a normal session close and notifies the Operator. The entity must not continue generating intent beyond this threshold.
+**Operator Bound**
+- [ ] SIL verifies Operator Bound at every boot; withholds session token indefinitely if absent or invalid.
+- [ ] Operator authority not delegable; every authorization originates directly from the bound Operator.
 
-**Fault & Recovery.** The boot loop crash threshold `N_boot` and the Operator Channel retry limit `N_channel` are declared in the structural baseline. Consecutive crashes reaching `N_boot` activate the Passive Distress Beacon and suspended halt. The Passive Distress Beacon mechanism is readable from the Entity Store without network connectivity or running processes. The Operator Channel delivery mechanism provides a confirmation signal and is verified at every boot.
+**Context Window**
+- [ ] Context window critical threshold declared in the structural baseline and not modifiable at runtime.
+- [ ] CPE initiates session-close signal when threshold is reached.
+- [ ] SIL executes normal session close and notifies the Operator.
 
-**CMI (if present).** If the CMI extension is active, the deployment conforms to the HACA-CMI specification and this document's CMI Policy: only private channels are used; the participant list and trusted peer registry are declared in the structural baseline and Operator-approved; no channel configuration is modified at runtime; all CMI traffic is logged to the Integrity Log.
+**Fault & Recovery**
+- [ ] `N_boot`, `N_channel`, and `N_retry` thresholds declared in the structural baseline.
+- [ ] Consecutive crashes reaching `N_boot` activate the Passive Distress Beacon and suspended halt.
+- [ ] Operator Channel delivery mechanism provides confirmation signal and is verified at every boot.
+- [ ] Passive Distress Beacon readable from the Entity Store without network connectivity or running processes.
+- [ ] Passive Distress Beacon acknowledgement requires resolution verification by the SIL.
+
+**CMI (if present)**
+- [ ] Only private Mesh Channels permitted.
+- [ ] Participant list and trusted peer registry declared in the structural baseline and Operator-approved.
+- [ ] No channel configuration modified at runtime.
+- [ ] All CMI traffic logged to the Integrity Log.
+
+**HACA-Arch inherited parameters**
+- [ ] Session Store size threshold `S` declared in the structural baseline.
+- [ ] Working Memory fixed size declared in the structural baseline.
+- [ ] Integrity Chain Checkpoint interval `C` declared in the structural baseline.
